@@ -1,0 +1,47 @@
+.popup-notification-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.popup-notification {
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 10px;
+    position: relative;
+    max-width: 300px;
+    cursor: pointer;
+}
+
+.cancel-button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 0;
+}
+
+.cancel-button svg {
+    fill: #ff4d4d;
+    width: 20px;
+    height: 20px;
+}
+
+.cancel-button:hover svg {
+    fill: #ff3333;
+}
+
+.popup-message {
+    margin-right: 30px;
+    /* Add space for the close button */
+}

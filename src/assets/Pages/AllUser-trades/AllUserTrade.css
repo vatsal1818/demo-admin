@@ -1,0 +1,114 @@
+/* Styles for the AllUserTrade component */
+.all-user-trade-container {
+    padding: 20px;
+    width: 100%;
+    font-family: Arial, sans-serif;
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #f9f9f9;
+}
+
+table th,
+table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+table th {
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+table td {
+    background-color: #ffffff;
+}
+
+table tr:nth-child(even) td {
+    background-color: #f2f2f2;
+}
+
+table tr:hover td {
+    background-color: #ddd;
+}
+
+/* Specific Field Styling */
+td ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+td li {
+    padding: 8px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+td li:last-child {
+    border-bottom: none;
+}
+
+td li span {
+    font-weight: bold;
+}
+
+.overall-totals {
+    display: flex;
+    justify-content: space-between;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+.daily-totals {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+.overall-totals h3,
+.daily-totals h3 {
+    margin: 0;
+}
+
+.daily-totals p {
+    margin: 0;
+    margin-left: auto;
+}
+
+.overall-totals span,
+.daily-totals span {
+    margin-right: 20px;
+}
+
+
+.trades-by-date {
+    margin-top: 50px;
+}
+
+.profit {
+    color: green;
+}
+
+.loss {
+    color: red;
+}
+
+.daily-charges-update {
+    margin-top: 20px;
+}

@@ -1,0 +1,260 @@
+.private-chat {
+    width: 500px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chat-header {
+    background-color: #f0f0f0;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.close-button,
+.delete-chat-button {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.message-container {
+    height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #fff;
+}
+
+.message {
+    margin-bottom: 10px;
+}
+
+.message strong {
+    font-weight: bold;
+}
+
+.message-input {
+    display: flex;
+    padding: 10px;
+    background-color: #f0f0f0;
+}
+
+.message-input input {
+    flex-grow: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.send-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin-left: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.send-button:hover {
+    background-color: #45a049;
+}
+
+.call-buttons {
+    margin-top: 10px;
+}
+
+.call-buttons button {
+    margin-right: 10px;
+}
+
+.call-container {
+    margin-top: 20px;
+}
+
+.video-streams {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.video-streams video {
+    width: 30%;
+    max-width: 250px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.video-streams video {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.local h3 {
+    text-align: center;
+}
+
+.remote h3 {
+    text-align: center;
+}
+
+
+.call-buttons {
+    display: flex;
+    justify-content: space-around;
+}
+
+.call-buttons button {
+    padding: 5px 10px;
+    border: none;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.call-buttons button:first-child {
+    background-color: #4CAF50;
+    /* Green for voice call */
+    color: white;
+}
+
+.call-buttons button:last-child {
+    background-color: #2196F3;
+    /* Blue for video call */
+    color: white;
+}
+
+.call-buttons button:hover {
+    opacity: 0.8;
+    /* Slight opacity on hover */
+}
+
+.call-buttons button:focus {
+    outline: none;
+    /* Remove default outline */
+}
+
+
+.incoming-call {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f9f9f9;
+    /* Light background for incoming call box */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    /* Width of the incoming call box */
+    margin: 20px auto;
+    text-align: center;
+}
+
+.incoming-call h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #333;
+}
+
+.incoming-call button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin: 5px;
+    /* Space between the buttons */
+}
+
+.incoming-call button:first-child {
+    background-color: #4CAF50;
+    /* Green for Accept button */
+    color: white;
+}
+
+.incoming-call button:last-child {
+    background-color: #f44336;
+    /* Red for Reject button */
+    color: white;
+}
+
+.incoming-call button:hover {
+    opacity: 0.9;
+    /* Slight transparency when hovering */
+}
+
+.incoming-call button:focus {
+    outline: none;
+    /* Remove default outline */
+}
+
+
+.call-container h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+video {
+    border-radius: 10px;
+    border: 2px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.audio-controls {
+    margin-top: 20px;
+}
+
+.audio-controls button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+    background-color: #2196F3;
+    color: white;
+}
+
+.audio-controls button:hover {
+    background-color: #0b7dda;
+}
+
+.call-container button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #f44336;
+    /* Red for the End Call button */
+    color: white;
+    margin-top: 10px;
+    /* margin-bottom: 10px; */
+    transition: background-color 0.3s ease;
+}
+
+.call-container button:hover {
+    background-color: #d32f2f;
+}
+
+.call-container button:focus {
+    outline: none;
+}

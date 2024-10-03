@@ -1,0 +1,220 @@
+/* Container styling */
+.all-user-trade-container {
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2,
+h3 {
+    color: #333;
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 40px;
+}
+
+h3 {
+    font-size: 18px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.filter-section {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-section label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.filter-section input[type="date"] {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.user-trades-section {
+    margin-bottom: 30px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Styling for totals */
+.overall-totals {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #f0f4f8;
+    color: #555;
+    font-size: 16px;
+}
+
+.overall-totals p {
+    margin: 0;
+    margin-left: auto;
+}
+
+.invested {
+    color: #333;
+    font-weight: bold;
+}
+
+.profit {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.loss {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Table styling */
+.trades-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.trades-table th,
+.trades-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.trades-table th {
+    background-color: #f7f7f7;
+    color: #333;
+    font-weight: bold;
+}
+
+.trades-table td {
+    background-color: #fff;
+    color: #555;
+}
+
+.trades-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.trades-table .profit {
+    color: #28a745;
+}
+
+.trades-table .loss {
+    color: #dc3545;
+}
+
+.trades-table button {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.trades-table button:hover {
+    background-color: #0056b3;
+}
+
+/* Edit modal styling */
+.edit-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    width: 400px;
+}
+
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edit-form label {
+    font-weight: bold;
+    color: #555;
+}
+
+.edit-form input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.edit-modal button {
+    margin-top: 10px;
+    padding: 8px 15px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.edit-modal button:hover {
+    background-color: #218838;
+}
+
+.edit-modal button:last-child {
+    background-color: #dc3545;
+    margin-left: 10px;
+}
+
+.edit-modal button:last-child:hover {
+    background-color: #c82333;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .all-user-trade-container {
+        padding: 10px;
+    }
+
+    .filter-section {
+        flex-direction: column;
+    }
+
+    .filter-section label {
+        margin-bottom: 5px;
+    }
+
+    .filter-section input[type="date"] {
+        width: 100%;
+    }
+
+    .trades-table th,
+    .trades-table td {
+        padding: 8px;
+    }
+
+    .trades-table button {
+        padding: 5px 8px;
+    }
+}
