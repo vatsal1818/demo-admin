@@ -2,7 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./chat.css";
 import { useSocket } from "../../Components/Socket/SocketContext.jsx";
-import { API_URL, FILE_UPLOAD_URL } from "../../Helper/Api_helpers.jsx";
+import {
+  API_URL,
+  BROADCAST_CHAT_HISTORY,
+  FILE_UPLOAD_URL,
+  USER_INFO_URL,
+} from "../../Helper/Api_helpers.jsx";
 
 const AdminChat = () => {
   const { socket } = useSocket();
@@ -83,10 +88,8 @@ const AdminChat = () => {
     const fetchMessages = async () => {
       try {
         const [broadcastResponse, usersResponse] = await Promise.all([
-          axios.get(
-            `${process.env.REACT_APP_API_URL}/api/chat-history/broadcast`
-          ),
-          axios.get(`${process.env.REACT_APP_API_URL}/users`),
+          axios.get(BROADCAST_CHAT_HISTORY),
+          axios.get(USER_INFO_URL),
         ]);
         setMessages(broadcastResponse.data);
         const usersArray = usersResponse.data.data;
