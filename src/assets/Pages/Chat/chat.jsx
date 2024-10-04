@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import "./chat.css";
 import { useSocket } from "../../Components/Socket/SocketContext.jsx";
@@ -8,6 +8,13 @@ import {
   FILE_UPLOAD_URL,
   USER_INFO_URL,
 } from "../../Helper/Api_helpers.jsx";
+import {
+  createPeerConnection,
+  createOffer,
+  createAnswer,
+  addIceCandidate,
+  handleRemoteDescription,
+} from "../../Components/WebRTC/WebRTC.jsx";
 
 const AdminChat = () => {
   const { socket } = useSocket();
@@ -15,8 +22,88 @@ const AdminChat = () => {
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState({});
   const [file, setFile] = useState(null);
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStreams, setRemoteStreams] = useState({});
+  const [inCall, setInCall] = useState(false);
+  const [callType, setCallType] = useState(null);
+  const peerConnectionsRef = useRef({});
+  const localVideoRef = useRef(null);
+  const remoteVideoRefs = useRef({});
+  const iceCandidatesQueue = useRef({});
 
   const adminId = "66a87c2125b2b6bad889fb56";
+
+  const initializePeerConnections = useCallback(() => {
+    const configuration = {
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    };
+
+    Object.keys(users).forEach((userId) => {
+      if (peerConnectionsRef.current[userId]) {
+        peerConnectionsRef.current[userId].close();
+      }
+
+      peerConnectionsRef.current[userId] = createPeerConnection(configuration);
+
+      peerConnectionsRef.current[userId].onicecandidate = (event) => {
+        if (event.candidate && socket) {
+          console.log(
+            `Sending ICE candidate to user ${userId}`,
+            event.candidate
+          );
+          socket.emit("ice-candidate", {
+            to: userId,
+            candidate: event.candidate,
+          });
+        }
+      };
+
+      peerConnectionsRef.current[userId].ontrack = (event) => {
+        console.log(`Received track from user ${userId}`, event.streams[0]);
+        setRemoteStreams((prev) => ({
+          ...prev,
+          [userId]: event.streams[0],
+        }));
+      };
+
+      peerConnectionsRef.current[userId].onconnectionstatechange = () => {
+        console.log(
+          `Connection state change for user ${userId}:`,
+          peerConnectionsRef.current[userId].connectionState
+        );
+        if (
+          peerConnectionsRef.current[userId].connectionState ===
+            "disconnected" ||
+          peerConnectionsRef.current[userId].connectionState === "failed" ||
+          peerConnectionsRef.current[userId].connectionState === "closed"
+        ) {
+          handleEndCall(userId);
+        }
+      };
+
+      iceCandidatesQueue.current[userId] = [];
+    });
+  }, [users, socket]);
+
+  useEffect(() => {
+    initializePeerConnections();
+
+    return () => {
+      Object.values(peerConnectionsRef.current).forEach((pc) => pc.close());
+    };
+  }, [initializePeerConnections]);
+
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useEffect(() => {
+    if (remoteVideoRefs.current && remoteStreams) {
+      remoteVideoRefs.current.srcObject = remoteStreams;
+    }
+  }, [remoteStreams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,6 +171,106 @@ const AdminChat = () => {
     }
   };
 
+  const startCall = async (type) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: type === "video",
+      });
+
+      setLocalStream(stream);
+      setCallType(type);
+      setInCall(true);
+
+      Object.keys(users).forEach(async (userId) => {
+        stream.getTracks().forEach((track) => {
+          peerConnectionsRef.current[userId].addTrack(track, stream);
+        });
+
+        const offer = await createOffer(peerConnectionsRef.current[userId]);
+        socket.emit("call-offer", { to: userId, offer, type });
+      });
+    } catch (error) {
+      console.error("Error starting call:", error);
+    }
+  };
+
+  const handleCallAnswer = async ({ from, answer }) => {
+    console.log(`Received answer from user ${from}`, answer);
+    try {
+      if (peerConnectionsRef.current[from]) {
+        await handleRemoteDescription(
+          peerConnectionsRef.current[from],
+          new RTCSessionDescription(answer)
+        );
+        console.log(`Set remote description for user ${from}`);
+
+        // Process queued ICE candidates
+        if (iceCandidatesQueue.current[from]) {
+          while (iceCandidatesQueue.current[from].length) {
+            const candidate = iceCandidatesQueue.current[from].shift();
+            await addIceCandidate(peerConnectionsRef.current[from], candidate);
+            console.log(`Processed queued ICE candidate for user ${from}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Admin error setting remote description:", error);
+    }
+  };
+
+  const handleIceCandidate = async ({ from, candidate }) => {
+    console.log(`Received ICE candidate from user ${from}`, candidate);
+    try {
+      const peerConnection = peerConnectionsRef.current[from];
+      if (peerConnection) {
+        if (
+          peerConnection.remoteDescription &&
+          peerConnection.remoteDescription.type
+        ) {
+          await addIceCandidate(peerConnection, new RTCIceCandidate(candidate));
+          console.log(`Added ICE candidate for user ${from}`);
+        } else {
+          // Queue the candidate
+          iceCandidatesQueue.current[from].push(new RTCIceCandidate(candidate));
+          console.log(`Queued ICE candidate for user ${from}`);
+        }
+      }
+    } catch (error) {
+      console.error("Admin error handling ICE candidate:", error);
+    }
+  };
+
+  const handleEndCall = (userId = null) => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
+    }
+
+    if (userId) {
+      if (peerConnectionsRef.current[userId]) {
+        peerConnectionsRef.current[userId].close();
+        delete peerConnectionsRef.current[userId];
+      }
+      setRemoteStreams((prev) => {
+        const newStreams = { ...prev };
+        delete newStreams[userId];
+        return newStreams;
+      });
+    } else {
+      Object.values(peerConnectionsRef.current).forEach((pc) => pc.close());
+      peerConnectionsRef.current = {};
+      setRemoteStreams({});
+    }
+
+    if (Object.keys(remoteStreams).length === 0) {
+      setInCall(false);
+      setCallType(null);
+    }
+
+    socket.emit("end-call", { to: userId || Object.keys(users) });
+  };
+
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -107,9 +294,13 @@ const AdminChat = () => {
 
     if (socket) {
       socket.emit("register-admin");
+      socket.on("call-answer", handleCallAnswer);
+      socket.on("ice-candidate", handleIceCandidate);
 
       return () => {
         socket.off("register-admin");
+        socket.off("call-answer");
+        socket.off("ice-candidate");
       };
     }
   }, [socket]);
@@ -180,6 +371,62 @@ const AdminChat = () => {
           </div>
         ))}
       </div>
+
+      {!inCall && (
+        <div className="call-buttons">
+          <button onClick={() => startCall("audio")}>Start Voice Call</button>
+          <button onClick={() => startCall("video")}>Start Video Call</button>
+        </div>
+      )}
+
+      {inCall && (
+        <div className="call-container">
+          <h3>
+            {callType === "audio" ? "Voice Call" : "Video Call"} in progress
+          </h3>
+          {callType === "video" && (
+            <div className="video-streams">
+              <div className="local-stream">
+                <h4>You (Admin)</h4>
+                <video ref={localVideoRef} autoPlay muted playsInline />
+              </div>
+              {Object.entries(remoteStreams).map(([userId, stream]) => (
+                <div key={userId} className="remote-stream">
+                  <h4>{users[userId] || "User"}</h4>
+                  <video
+                    autoPlay
+                    playsInline
+                    ref={(el) => {
+                      if (el) {
+                        el.srcObject = stream;
+                      }
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          {callType === "audio" && (
+            <div className="audio-streams">
+              {Object.entries(remoteStreams).map(([userId, stream]) => (
+                <div key={userId}>
+                  <h4>{users[userId] || "User"}</h4>
+                  <audio
+                    autoPlay
+                    controls
+                    ref={(el) => {
+                      if (el) {
+                        el.srcObject = stream;
+                      }
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <button onClick={() => handleEndCall()}>End Call</button>
+        </div>
+      )}
 
       <form className="send-container" onSubmit={handleSubmit}>
         <input
