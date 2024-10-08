@@ -31,6 +31,9 @@ const AdminChat = () => {
   const remoteVideoRefs = useRef({});
   const iceCandidatesQueue = useRef({});
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [broadcastCall, setBroadcastCall] = useState(false);
+  const [broadcastStreams, setBroadcastStreams] = useState({});
+  const broadcastPeerConnectionsRef = useRef({});
 
   const adminId = "66a87c2125b2b6bad889fb56";
 
@@ -171,74 +174,80 @@ const AdminChat = () => {
 
       setLocalStream(stream);
       setCallType(type);
-      setInCall(true);
+      setBroadcastCall(true);
 
-      // Set all users as pending
-      setPendingUsers(Object.keys(users));
-
-      Object.keys(users).forEach(async (userId) => {
-        // Create a new peer connection for each user
+      // Initialize peer connections for all users
+      Object.keys(users).forEach((userId) => {
         const peerConnection = createPeerConnection({
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
 
-        peerConnectionsRef.current[userId] = peerConnection;
+        // Add all tracks from the local stream to the peer connection
+        stream.getTracks().forEach((track) => {
+          peerConnection.addTrack(track, stream);
+        });
 
-        // Set up event handlers for this peer connection
+        // Set up ice candidate handling
         peerConnection.onicecandidate = (event) => {
           if (event.candidate) {
-            socket.emit("ice-candidate", {
+            socket.emit("broadcast-ice-candidate", {
               to: userId,
               candidate: event.candidate,
             });
           }
         };
 
-        peerConnection.ontrack = (event) => {
-          console.log(`Received track from user ${userId}`, event.streams[0]);
-          setRemoteStreams((prev) => ({
-            ...prev,
-            [userId]: event.streams[0],
-          }));
-        };
-
-        // Add local stream tracks to the peer connection
-        stream.getTracks().forEach((track) => {
-          peerConnection.addTrack(track, stream);
-        });
+        // Store the peer connection
+        broadcastPeerConnectionsRef.current[userId] = peerConnection;
 
         // Create and send offer
-        const offer = await createOffer(peerConnection);
-        socket.emit("call-offer", { to: userId, offer, type });
+        createOffer(peerConnection).then((offer) => {
+          socket.emit("broadcast-call-offer", {
+            to: userId,
+            offer,
+            type,
+            isBroadcast: true,
+          });
+        });
       });
     } catch (error) {
       console.error("Error starting broadcast call:", error);
     }
   };
 
-  const handleCallAnswer = async ({ from, answer }) => {
+  const handleBroadcastCallAnswer = async ({ from, answer }) => {
+    console.log("Admin received call answer from:", from, "Answer:", answer);
+    logPeerConnections();
     try {
-      if (peerConnectionsRef.current[from]) {
-        await handleRemoteDescription(
-          peerConnectionsRef.current[from],
-          new RTCSessionDescription(answer)
-        );
+      const peerConnection = broadcastPeerConnectionsRef.current[from];
 
-        // After setting remote description, process any queued ICE candidates
-        if (iceCandidatesQueue.current[from]) {
-          const candidates = iceCandidatesQueue.current[from];
-          for (const candidate of candidates) {
-            await addIceCandidate(peerConnectionsRef.current[from], candidate);
-          }
-          iceCandidatesQueue.current[from] = [];
-        }
-
-        // Remove user from pending list when they answer
-        setPendingUsers((prev) => prev.filter((userId) => userId !== from));
+      if (!peerConnection) {
+        console.error(`No peer connection found for user ${from}`);
+        return;
       }
+
+      console.log("Found peer connection:", peerConnection);
+
+      await handleRemoteDescription(
+        peerConnection,
+        new RTCSessionDescription(answer)
+      );
+
+      console.log("Admin successfully set remote description for user:", from);
     } catch (error) {
-      console.error("Admin error setting remote description:", error);
+      console.error("Error handling broadcast call answer:", error);
     }
+    logPeerConnections();
+  };
+
+  // Add this utility function to help with debugging
+  const logPeerConnections = () => {
+    console.log("Current peer connections:");
+    Object.entries(broadcastPeerConnectionsRef.current).forEach(
+      ([userId, pc]) => {
+        console.log(`User ${userId}:`, pc.connectionState);
+      }
+    );
   };
 
   const handleCallRejection = ({ from }) => {
@@ -247,69 +256,52 @@ const AdminChat = () => {
     handleEndCall(from);
   };
 
-  const handleIceCandidate = async ({ from, candidate }) => {
+  const handleBroadcastIceCandidate = async ({ from, candidate }) => {
     try {
-      const peerConnection = peerConnectionsRef.current[from];
-      if (!peerConnection) {
-        console.error(`No peer connection found for user ${from}`);
-        return;
-      }
-
-      if (peerConnection.remoteDescription) {
+      const peerConnection = broadcastPeerConnectionsRef.current[from];
+      if (peerConnection) {
         await addIceCandidate(peerConnection, new RTCIceCandidate(candidate));
-      } else {
-        // Queue the candidate if remote description is not set yet
-        if (!iceCandidatesQueue.current[from]) {
-          iceCandidatesQueue.current[from] = [];
-        }
-        iceCandidatesQueue.current[from].push(new RTCIceCandidate(candidate));
       }
     } catch (error) {
-      console.error("Admin error handling ICE candidate:", error);
+      console.error("Error handling broadcast ICE candidate:", error);
     }
   };
 
-  const handleEndCall = (userId = null) => {
-    if (userId) {
-      if (peerConnectionsRef.current[userId]) {
-        peerConnectionsRef.current[userId].close();
-        delete peerConnectionsRef.current[userId];
-      }
-      setRemoteStreams((prev) => {
-        const newStreams = { ...prev };
-        delete newStreams[userId];
-        return newStreams;
-      });
-      setPendingUsers((prev) => prev.filter((id) => id !== userId));
-    } else {
-      Object.values(peerConnectionsRef.current).forEach((pc) => pc.close());
-      peerConnectionsRef.current = {};
-      setRemoteStreams({});
-      setPendingUsers([]);
+  const endBroadcastCall = () => {
+    socket.emit("end-broadcast-call");
+    Object.values(broadcastPeerConnectionsRef.current).forEach((pc) =>
+      pc.close()
+    );
+    broadcastPeerConnectionsRef.current = {};
+    setBroadcastStreams({});
+    setBroadcastCall(false);
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
     }
-
-    if (!userId || Object.keys(remoteStreams).length === 1) {
-      if (localStream) {
-        localStream.getTracks().forEach((track) => track.stop());
-        setLocalStream(null);
-      }
-      setInCall(false);
-      setCallType(null);
-    }
-
-    socket.emit("end-call", { to: userId || Object.keys(users) });
+    setCallType(null);
   };
 
   useEffect(() => {
     if (socket) {
-      socket.on("call-answer", handleCallAnswer);
-      socket.on("ice-candidate", handleIceCandidate);
-      socket.on("call-rejected", handleCallRejection);
+      socket.on("broadcast-call-answer", handleBroadcastCallAnswer);
+      socket.on("broadcast-ice-candidate", handleBroadcastIceCandidate);
+      socket.on("user-left-broadcast-call", ({ userId }) => {
+        if (broadcastPeerConnectionsRef.current[userId]) {
+          broadcastPeerConnectionsRef.current[userId].close();
+          delete broadcastPeerConnectionsRef.current[userId];
+        }
+        setBroadcastStreams((prev) => {
+          const newStreams = { ...prev };
+          delete newStreams[userId];
+          return newStreams;
+        });
+      });
 
       return () => {
-        socket.off("call-answer");
-        socket.off("ice-candidate");
-        socket.off("call-rejected");
+        socket.off("broadcast-call-answer");
+        socket.off("broadcast-ice-candidate");
+        socket.off("user-left-broadcast-call");
       };
     }
   }, [socket]);
@@ -337,13 +329,15 @@ const AdminChat = () => {
 
     if (socket) {
       socket.emit("register-admin");
-      socket.on("call-answer", handleCallAnswer);
-      socket.on("ice-candidate", handleIceCandidate);
+      socket.on("broadcast-call-answer", handleBroadcastCallAnswer);
+      socket.on("broadcast-ice-candidate", handleBroadcastIceCandidate);
+      socket.on("user-left-broadcast-call");
 
       return () => {
         socket.off("register-admin");
-        socket.off("call-answer");
-        socket.off("ice-candidate");
+        socket.off("broadcast-call-answer");
+        socket.off("broadcast-ice-candidate");
+        socket.off("user-left-broadcast-call");
       };
     }
   }, [socket]);
@@ -415,7 +409,7 @@ const AdminChat = () => {
         ))}
       </div>
 
-      {!inCall && (
+      {!inCall && !broadcastCall && (
         <div className="call-buttons">
           <button onClick={() => startBroadcastCall("audio")}>
             Start Broadcast Voice Call
@@ -426,9 +420,12 @@ const AdminChat = () => {
         </div>
       )}
 
-      {inCall && (
-        <div className="call-container">
-          <h3>{callType === "audio" ? "Voice" : "Video"} Call in progress</h3>
+      {broadcastCall && (
+        <div className="broadcast-call-container">
+          <h3>
+            Broadcast {callType === "audio" ? "Voice" : "Video"} Call in
+            progress
+          </h3>
           <div className="streams-container">
             <div className="local-stream">
               <h4>You (Admin)</h4>
@@ -437,7 +434,7 @@ const AdminChat = () => {
               )}
             </div>
             <div className="remote-streams">
-              {Object.entries(remoteStreams).map(([userId, stream]) => (
+              {Object.entries(broadcastStreams).map(([userId, stream]) => (
                 <div key={userId} className="remote-stream">
                   <h4>{users[userId] || "Unknown User"}</h4>
                   {callType === "video" ? (
@@ -456,24 +453,11 @@ const AdminChat = () => {
                       }}
                     />
                   )}
-                  <button onClick={() => handleEndCall(userId)}>
-                    Remove {users[userId]}
-                  </button>
                 </div>
               ))}
             </div>
-            {pendingUsers.length > 0 && (
-              <div className="pending-users">
-                <h4>Waiting for response:</h4>
-                <ul>
-                  {pendingUsers.map((userId) => (
-                    <li key={userId}>{users[userId]}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
-          <button onClick={() => handleEndCall()}>End Call For All</button>
+          <button onClick={endBroadcastCall}>End Broadcast Call</button>
         </div>
       )}
 
