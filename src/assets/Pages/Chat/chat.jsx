@@ -34,70 +34,131 @@ const AdminChat = () => {
   const [broadcastCall, setBroadcastCall] = useState(false);
   const [broadcastStreams, setBroadcastStreams] = useState({});
   const broadcastPeerConnectionsRef = useRef({});
+  const userToSocketMap = useRef({});
 
   const adminId = "66a87c2125b2b6bad889fb56";
 
-  const initializePeerConnections = useCallback(() => {
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersResponse = await axios.get(USER_INFO_URL);
+        const usersArray = usersResponse.data.data;
+        const usersData = usersArray.reduce((acc, user) => {
+          acc[user._id] = user.username;
+          return acc;
+        }, {});
+        setUsers(usersData);
+
+        // Request socket IDs for all users
+        if (socket) {
+          socket.emit("request-user-socket-ids", Object.keys(usersData));
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
+    fetchUsers();
+  }, [socket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("user-socket-ids", (socketIds) => {
+        Object.entries(socketIds).forEach(([userId, socketId]) => {
+          userToSocketMap.current[userId] = socketId;
+        });
+        // After updating userToSocketMap, initialize peer connections
+        initializeBroadcastPeerConnections();
+      });
+
+      return () => {
+        socket.off("user-socket-ids");
+      };
+    }
+  }, [socket]);
+
+  const initializeBroadcastPeerConnections = useCallback(() => {
+    console.log("Initializing broadcast peer connections");
+
+    if (!users || Object.keys(users).length === 0) {
+      console.log("No users available to initialize connections");
+      return;
+    }
+
     const configuration = {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     };
 
     Object.keys(users).forEach((userId) => {
-      if (peerConnectionsRef.current[userId]) {
-        peerConnectionsRef.current[userId].close();
+      const socketId = userToSocketMap.current[userId];
+      if (!socketId) {
+        console.log(
+          `No socket ID found for user ${userId}, skipping connection setup`
+        );
+        return;
       }
 
-      peerConnectionsRef.current[userId] = createPeerConnection(configuration);
+      console.log(
+        `Setting up peer connection for user ${userId} with socket ${socketId}`
+      );
 
-      peerConnectionsRef.current[userId].onicecandidate = (event) => {
+      // Close existing connection if any
+      if (broadcastPeerConnectionsRef.current[userId]) {
+        broadcastPeerConnectionsRef.current[userId].close();
+      }
+
+      const peerConnection = createPeerConnection(configuration);
+      broadcastPeerConnectionsRef.current[userId] = peerConnection;
+
+      peerConnection.onicecandidate = (event) => {
         if (event.candidate && socket) {
-          socket.emit("ice-candidate", {
-            to: userId,
+          console.log(
+            `ICE candidate generated for user ${userId}:`,
+            event.candidate
+          );
+          socket.emit("broadcast-ice-candidate", {
+            to: socketId,
             candidate: event.candidate,
           });
         }
       };
 
-      peerConnectionsRef.current[userId].ontrack = (event) => {
-        setRemoteStreams((prev) => ({
+      // Update the ontrack handler
+      peerConnection.ontrack = (event) => {
+        console.log(
+          `Received remote track from user ${userId}:`,
+          event.streams[0]
+        );
+        setBroadcastStreams((prev) => ({
           ...prev,
           [userId]: event.streams[0],
         }));
       };
 
-      peerConnectionsRef.current[userId].onconnectionstatechange = () => {
-        if (
-          peerConnectionsRef.current[userId].connectionState ===
-            "disconnected" ||
-          peerConnectionsRef.current[userId].connectionState === "failed" ||
-          peerConnectionsRef.current[userId].connectionState === "closed"
-        ) {
-          handleEndCall(userId);
+      peerConnection.onconnectionstatechange = () => {
+        const state = peerConnection.connectionState;
+        console.log(`Connection state changed for user ${userId}:`, state);
+        if (["disconnected", "failed", "closed"].includes(state)) {
+          // Remove the stream when connection is closed
+          setBroadcastStreams((prev) => {
+            const newStreams = { ...prev };
+            delete newStreams[userId];
+            return newStreams;
+          });
         }
       };
-
-      iceCandidatesQueue.current[userId] = [];
     });
   }, [users, socket]);
 
   useEffect(() => {
-    initializePeerConnections();
-    return () => {
-      Object.values(peerConnectionsRef.current).forEach((pc) => pc.close());
-    };
-  }, [initializePeerConnections]);
+    initializeBroadcastPeerConnections();
+  }, [initializeBroadcastPeerConnections]);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
-
-  useEffect(() => {
-    if (remoteVideoRefs.current && remoteStreams) {
-      remoteVideoRefs.current.srcObject = remoteStreams;
-    }
-  }, [remoteStreams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -165,8 +226,59 @@ const AdminChat = () => {
     }
   };
 
+  // useEffect(() => {
+  //   if (socket) {
+  //     // socket.on("user-connected", (connectedUser) => {
+  //     //   setUsers((prevUsers) => ({
+  //     //     ...prevUsers,
+  //     //     [connectedUser.socketId]: connectedUser.username, // Store by socket.id
+  //     //   }));
+  //     // });
+  //     socket.on("ice-candidate", (data) => {
+  //       const { from, candidate } = data;
+
+  //       if (peerConnectionsRef.current[from]) {
+  //         // If peer connection exists, add ICE candidate
+  //         peerConnectionsRef.current[from].addIceCandidate(
+  //           new RTCIceCandidate(candidate)
+  //         );
+  //       } else {
+  //         // If no peer connection found, queue the candidate
+  //         console.log(
+  //           `No peer connection found for user ${from}, queueing candidate`
+  //         );
+  //         iceCandidatesQueue.current[from] =
+  //           iceCandidatesQueue.current[from] || [];
+  //         iceCandidatesQueue.current[from].push(candidate);
+  //       }
+  //     });
+  //     socket.on("broadcast-call-answer", handleBroadcastCallAnswer);
+  //     socket.on("broadcast-ice-candidate", handleBroadcastIceCandidate);
+  //     socket.on("user-left-broadcast-call", ({ userId }) => {
+  //       if (broadcastPeerConnectionsRef.current[userId]) {
+  //         broadcastPeerConnectionsRef.current[userId].close();
+  //         delete broadcastPeerConnectionsRef.current[userId];
+  //       }
+  //       setBroadcastStreams((prev) => {
+  //         const newStreams = { ...prev };
+  //         delete newStreams[userId];
+  //         return newStreams;
+  //       });
+  //     });
+
+  //     return () => {
+  //       socket.off("broadcast-call-answer");
+  //       socket.off("broadcast-ice-candidate");
+  //       socket.off("user-left-broadcast-call");
+  //       socket.off("ice-candidate");
+  //       // socket.off("user-connected");
+  //     };
+  //   }
+  // }, [socket]);
+
   const startBroadcastCall = async (type) => {
     try {
+      console.log("Starting broadcast call of type:", type);
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: type === "video",
@@ -176,34 +288,26 @@ const AdminChat = () => {
       setCallType(type);
       setBroadcastCall(true);
 
-      // Initialize peer connections for all users
-      Object.keys(users).forEach((userId) => {
-        const peerConnection = createPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-        });
+      // Initialize peer connections before starting the call
+      initializeBroadcastPeerConnections();
 
-        // Add all tracks from the local stream to the peer connection
+      Object.keys(users).forEach((userId) => {
+        const socketId = userToSocketMap.current[userId];
+        const peerConnection = broadcastPeerConnectionsRef.current[userId];
+
+        if (!peerConnection) {
+          console.error(`No peer connection found for user ${userId}`);
+          return;
+        }
+
         stream.getTracks().forEach((track) => {
           peerConnection.addTrack(track, stream);
         });
 
-        // Set up ice candidate handling
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit("broadcast-ice-candidate", {
-              to: userId,
-              candidate: event.candidate,
-            });
-          }
-        };
-
-        // Store the peer connection
-        broadcastPeerConnectionsRef.current[userId] = peerConnection;
-
-        // Create and send offer
         createOffer(peerConnection).then((offer) => {
+          console.log(`Sending offer to user ${userId}`, offer);
           socket.emit("broadcast-call-offer", {
-            to: userId,
+            to: socketId,
             offer,
             type,
             isBroadcast: true,
@@ -217,27 +321,35 @@ const AdminChat = () => {
 
   const handleBroadcastCallAnswer = async ({ from, answer }) => {
     console.log("Admin received call answer from:", from, "Answer:", answer);
-    logPeerConnections();
+
+    const userId = Object.keys(userToSocketMap.current).find(
+      (id) => userToSocketMap.current[id] === from
+    );
+
+    if (!userId) {
+      console.error(`No userId found for socketId: ${from}`);
+      return;
+    }
+
+    const peerConnection = broadcastPeerConnectionsRef.current[userId];
+
+    if (!peerConnection) {
+      console.error(`No peer connection found for user ${userId}`);
+      return;
+    }
+
     try {
-      const peerConnection = broadcastPeerConnectionsRef.current[from];
-
-      if (!peerConnection) {
-        console.error(`No peer connection found for user ${from}`);
-        return;
-      }
-
-      console.log("Found peer connection:", peerConnection);
-
       await handleRemoteDescription(
         peerConnection,
         new RTCSessionDescription(answer)
       );
-
-      console.log("Admin successfully set remote description for user:", from);
+      console.log(
+        "Admin successfully set remote description for user:",
+        userId
+      );
     } catch (error) {
       console.error("Error handling broadcast call answer:", error);
     }
-    logPeerConnections();
   };
 
   // Add this utility function to help with debugging
@@ -257,13 +369,25 @@ const AdminChat = () => {
   };
 
   const handleBroadcastIceCandidate = async ({ from, candidate }) => {
-    try {
-      const peerConnection = broadcastPeerConnectionsRef.current[from];
-      if (peerConnection) {
+    const userId = Object.keys(userToSocketMap.current).find(
+      (id) => userToSocketMap.current[id] === from
+    );
+
+    if (!userId) {
+      console.error(`No userId found for socketId: ${from}`);
+      return;
+    }
+
+    const peerConnection = broadcastPeerConnectionsRef.current[userId];
+
+    if (peerConnection) {
+      try {
         await addIceCandidate(peerConnection, new RTCIceCandidate(candidate));
+      } catch (error) {
+        console.error("Error handling broadcast ICE candidate:", error);
       }
-    } catch (error) {
-      console.error("Error handling broadcast ICE candidate:", error);
+    } else {
+      console.error(`No peer connection found for user ${userId}`);
     }
   };
 
@@ -284,6 +408,55 @@ const AdminChat = () => {
 
   useEffect(() => {
     if (socket) {
+      socket.on("user-connected", (connectedUser) => {
+        const { socketId, userId, username } = connectedUser;
+
+        setUsers((prevUsers) => ({
+          ...prevUsers,
+          [userId]: username,
+        }));
+
+        userToSocketMap.current[userId] = socketId;
+        socketToUserMap.current[socketId] = userId;
+
+        console.log(
+          `User connected - userId: ${userId}, socketId: ${socketId}`
+        );
+
+        if (broadcastCall) {
+          // If a broadcast call is ongoing, set up a new peer connection for this user
+          const peerConnection = createPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          });
+
+          broadcastPeerConnectionsRef.current[userId] = peerConnection;
+
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              socket.emit("broadcast-ice-candidate", {
+                to: socketId,
+                candidate: event.candidate,
+              });
+            }
+          };
+
+          if (localStream) {
+            localStream.getTracks().forEach((track) => {
+              peerConnection.addTrack(track, localStream);
+            });
+          }
+
+          createOffer(peerConnection).then((offer) => {
+            socket.emit("broadcast-call-offer", {
+              to: socketId,
+              offer,
+              type: callType,
+              isBroadcast: true,
+            });
+          });
+        }
+      });
+
       socket.on("broadcast-call-answer", handleBroadcastCallAnswer);
       socket.on("broadcast-ice-candidate", handleBroadcastIceCandidate);
       socket.on("user-left-broadcast-call", ({ userId }) => {
@@ -304,7 +477,7 @@ const AdminChat = () => {
         socket.off("user-left-broadcast-call");
       };
     }
-  }, [socket]);
+  }, [socket, broadcastCall, localStream, callType]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -329,15 +502,9 @@ const AdminChat = () => {
 
     if (socket) {
       socket.emit("register-admin");
-      socket.on("broadcast-call-answer", handleBroadcastCallAnswer);
-      socket.on("broadcast-ice-candidate", handleBroadcastIceCandidate);
-      socket.on("user-left-broadcast-call");
 
       return () => {
         socket.off("register-admin");
-        socket.off("broadcast-call-answer");
-        socket.off("broadcast-ice-candidate");
-        socket.off("user-left-broadcast-call");
       };
     }
   }, [socket]);
@@ -439,18 +606,29 @@ const AdminChat = () => {
                   <h4>{users[userId] || "Unknown User"}</h4>
                   {callType === "video" ? (
                     <video
+                      ref={(el) => {
+                        remoteVideoRefs.current[userId] = el; // Keep a reference to the video element
+                        if (el && stream) {
+                          el.srcObject = stream; // Set the stream
+                          el.play().catch((e) =>
+                            console.error("Error playing video:", e)
+                          );
+                        }
+                      }}
                       autoPlay
                       playsInline
-                      ref={(el) => {
-                        if (el) el.srcObject = stream;
-                      }}
                     />
                   ) : (
                     <audio
-                      autoPlay
                       ref={(el) => {
-                        if (el) el.srcObject = stream;
+                        if (el) {
+                          el.srcObject = stream; // Set the audio stream
+                          el.play().catch((e) =>
+                            console.error("Error playing audio:", e)
+                          );
+                        }
                       }}
+                      autoPlay
                     />
                   )}
                 </div>
