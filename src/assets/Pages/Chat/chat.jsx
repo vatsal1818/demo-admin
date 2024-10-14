@@ -35,6 +35,8 @@ const AdminChat = () => {
   const [broadcastStreams, setBroadcastStreams] = useState({});
   const broadcastPeerConnectionsRef = useRef({});
   const userToSocketMap = useRef({});
+  const socketToUserMap = useRef({});
+  const iceCandidateQueues = useRef({});
 
   const adminId = "66a87c2125b2b6bad889fb56";
 
@@ -61,14 +63,21 @@ const AdminChat = () => {
     fetchUsers();
   }, [socket]);
 
+  const requestSocketIds = useCallback(() => {
+    if (socket && Object.keys(users).length > 0) {
+      console.log("Requesting socket IDs for users:", Object.keys(users));
+      socket.emit("request-user-socket-ids", Object.keys(users));
+    }
+  }, [socket, users]);
+
   useEffect(() => {
     if (socket) {
       socket.on("user-socket-ids", (socketIds) => {
+        console.log("Received socket IDs:", socketIds);
+        userToSocketMap.current = socketIds;
         Object.entries(socketIds).forEach(([userId, socketId]) => {
-          userToSocketMap.current[userId] = socketId;
+          socketToUserMap.current[socketId] = userId;
         });
-        // After updating userToSocketMap, initialize peer connections
-        initializeBroadcastPeerConnections();
       });
 
       return () => {
@@ -80,10 +89,19 @@ const AdminChat = () => {
   const initializeBroadcastPeerConnections = useCallback(() => {
     console.log("Initializing broadcast peer connections");
 
+    iceCandidateQueues.current = {};
+
     if (!users || Object.keys(users).length === 0) {
       console.log("No users available to initialize connections");
       return;
     }
+
+    // Close all existing connections
+    Object.values(broadcastPeerConnectionsRef.current).forEach((pc) => {
+      pc.close();
+    });
+    broadcastPeerConnectionsRef.current = {};
+    setBroadcastStreams({}); // Clear existing streams
 
     const configuration = {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -102,20 +120,21 @@ const AdminChat = () => {
         `Setting up peer connection for user ${userId} with socket ${socketId}`
       );
 
-      // Close existing connection if any
-      if (broadcastPeerConnectionsRef.current[userId]) {
-        broadcastPeerConnectionsRef.current[userId].close();
-      }
+      // Initialize ICE candidate queue for this user
+      iceCandidateQueues.current[userId] = [];
 
-      const peerConnection = createPeerConnection(configuration);
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          // Add TURN server if available
+        ],
+      });
+
       broadcastPeerConnectionsRef.current[userId] = peerConnection;
 
       peerConnection.onicecandidate = (event) => {
         if (event.candidate && socket) {
-          console.log(
-            `ICE candidate generated for user ${userId}:`,
-            event.candidate
-          );
+          console.log(`Sending ICE candidate to user ${userId}`);
           socket.emit("broadcast-ice-candidate", {
             to: socketId,
             candidate: event.candidate,
@@ -123,12 +142,8 @@ const AdminChat = () => {
         }
       };
 
-      // Update the ontrack handler
       peerConnection.ontrack = (event) => {
-        console.log(
-          `Received remote track from user ${userId}:`,
-          event.streams[0]
-        );
+        console.log(`Received track from user ${userId}:`, event.streams[0]);
         setBroadcastStreams((prev) => ({
           ...prev,
           [userId]: event.streams[0],
@@ -136,10 +151,15 @@ const AdminChat = () => {
       };
 
       peerConnection.onconnectionstatechange = () => {
-        const state = peerConnection.connectionState;
-        console.log(`Connection state changed for user ${userId}:`, state);
-        if (["disconnected", "failed", "closed"].includes(state)) {
-          // Remove the stream when connection is closed
+        console.log(
+          `Connection state changed for user ${userId}:`,
+          peerConnection.connectionState
+        );
+        if (
+          peerConnection.connectionState === "disconnected" ||
+          peerConnection.connectionState === "failed" ||
+          peerConnection.connectionState === "closed"
+        ) {
           setBroadcastStreams((prev) => {
             const newStreams = { ...prev };
             delete newStreams[userId];
@@ -226,59 +246,18 @@ const AdminChat = () => {
     }
   };
 
-  // useEffect(() => {
-  //   if (socket) {
-  //     // socket.on("user-connected", (connectedUser) => {
-  //     //   setUsers((prevUsers) => ({
-  //     //     ...prevUsers,
-  //     //     [connectedUser.socketId]: connectedUser.username, // Store by socket.id
-  //     //   }));
-  //     // });
-  //     socket.on("ice-candidate", (data) => {
-  //       const { from, candidate } = data;
-
-  //       if (peerConnectionsRef.current[from]) {
-  //         // If peer connection exists, add ICE candidate
-  //         peerConnectionsRef.current[from].addIceCandidate(
-  //           new RTCIceCandidate(candidate)
-  //         );
-  //       } else {
-  //         // If no peer connection found, queue the candidate
-  //         console.log(
-  //           `No peer connection found for user ${from}, queueing candidate`
-  //         );
-  //         iceCandidatesQueue.current[from] =
-  //           iceCandidatesQueue.current[from] || [];
-  //         iceCandidatesQueue.current[from].push(candidate);
-  //       }
-  //     });
-  //     socket.on("broadcast-call-answer", handleBroadcastCallAnswer);
-  //     socket.on("broadcast-ice-candidate", handleBroadcastIceCandidate);
-  //     socket.on("user-left-broadcast-call", ({ userId }) => {
-  //       if (broadcastPeerConnectionsRef.current[userId]) {
-  //         broadcastPeerConnectionsRef.current[userId].close();
-  //         delete broadcastPeerConnectionsRef.current[userId];
-  //       }
-  //       setBroadcastStreams((prev) => {
-  //         const newStreams = { ...prev };
-  //         delete newStreams[userId];
-  //         return newStreams;
-  //       });
-  //     });
-
-  //     return () => {
-  //       socket.off("broadcast-call-answer");
-  //       socket.off("broadcast-ice-candidate");
-  //       socket.off("user-left-broadcast-call");
-  //       socket.off("ice-candidate");
-  //       // socket.off("user-connected");
-  //     };
-  //   }
-  // }, [socket]);
-
   const startBroadcastCall = async (type) => {
     try {
       console.log("Starting broadcast call of type:", type);
+
+      // Request fresh socket IDs
+      if (socket) {
+        socket.emit("request-user-socket-ids", Object.keys(users));
+      }
+
+      // Wait for socket IDs to be updated
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: type === "video",
@@ -288,31 +267,50 @@ const AdminChat = () => {
       setCallType(type);
       setBroadcastCall(true);
 
-      // Initialize peer connections before starting the call
+      // Initialize peer connections
       initializeBroadcastPeerConnections();
+
+      // Wait for peer connections to be initialized
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       Object.keys(users).forEach((userId) => {
         const socketId = userToSocketMap.current[userId];
         const peerConnection = broadcastPeerConnectionsRef.current[userId];
 
-        if (!peerConnection) {
-          console.error(`No peer connection found for user ${userId}`);
+        if (!peerConnection || !socketId) {
+          console.error(
+            `Missing peer connection or socket ID for user ${userId}`
+          );
           return;
         }
 
+        // Add local stream tracks to peer connection
         stream.getTracks().forEach((track) => {
+          console.log(
+            `Adding track to peer connection for user ${userId}`,
+            track
+          );
           peerConnection.addTrack(track, stream);
         });
 
-        createOffer(peerConnection).then((offer) => {
-          console.log(`Sending offer to user ${userId}`, offer);
-          socket.emit("broadcast-call-offer", {
-            to: socketId,
-            offer,
-            type,
-            isBroadcast: true,
+        peerConnection
+          .createOffer()
+          .then((offer) => {
+            console.log(`Created offer for user ${userId}`, offer);
+            return peerConnection.setLocalDescription(offer);
+          })
+          .then(() => {
+            console.log(`Set local description for user ${userId}`);
+            socket.emit("broadcast-call-offer", {
+              to: socketId,
+              offer: peerConnection.localDescription,
+              type,
+              isBroadcast: true,
+            });
+          })
+          .catch((error) => {
+            console.error(`Error creating offer for user ${userId}:`, error);
           });
-        });
       });
     } catch (error) {
       console.error("Error starting broadcast call:", error);
@@ -320,7 +318,7 @@ const AdminChat = () => {
   };
 
   const handleBroadcastCallAnswer = async ({ from, answer }) => {
-    console.log("Admin received call answer from:", from, "Answer:", answer);
+    console.log("Received broadcast call answer from:", from);
 
     const userId = Object.keys(userToSocketMap.current).find(
       (id) => userToSocketMap.current[id] === from
@@ -339,16 +337,36 @@ const AdminChat = () => {
     }
 
     try {
-      await handleRemoteDescription(
-        peerConnection,
+      await peerConnection.setRemoteDescription(
         new RTCSessionDescription(answer)
       );
+      console.log(`Set remote description for user ${userId}`);
+
+      // Process queued ICE candidates after setting remote description
+      const queuedCandidates = iceCandidateQueues.current[userId] || [];
       console.log(
-        "Admin successfully set remote description for user:",
-        userId
+        `Processing ${queuedCandidates.length} queued ICE candidates for user ${userId}`
       );
+
+      for (const candidate of queuedCandidates) {
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log(`Added queued ICE candidate for user ${userId}`);
+        } catch (error) {
+          console.error(
+            `Error adding queued ICE candidate for user ${userId}:`,
+            error
+          );
+        }
+      }
+
+      // Clear the queue
+      iceCandidateQueues.current[userId] = [];
     } catch (error) {
-      console.error("Error handling broadcast call answer:", error);
+      console.error(
+        `Error setting remote description for user ${userId}:`,
+        error
+      );
     }
   };
 
@@ -380,14 +398,28 @@ const AdminChat = () => {
 
     const peerConnection = broadcastPeerConnectionsRef.current[userId];
 
-    if (peerConnection) {
+    if (!peerConnection) {
+      console.error(`No peer connection found for user ${userId}`);
+      return;
+    }
+
+    if (
+      peerConnection.remoteDescription &&
+      peerConnection.remoteDescription.type
+    ) {
       try {
-        await addIceCandidate(peerConnection, new RTCIceCandidate(candidate));
+        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log(`Added ICE candidate for user ${userId}`);
       } catch (error) {
-        console.error("Error handling broadcast ICE candidate:", error);
+        console.error(`Error adding ICE candidate for user ${userId}:`, error);
       }
     } else {
-      console.error(`No peer connection found for user ${userId}`);
+      // Queue the ICE candidate
+      if (!iceCandidateQueues.current[userId]) {
+        iceCandidateQueues.current[userId] = [];
+      }
+      console.log(`Queueing ICE candidate for user ${userId}`);
+      iceCandidateQueues.current[userId].push(candidate);
     }
   };
 
@@ -397,6 +429,7 @@ const AdminChat = () => {
       pc.close()
     );
     broadcastPeerConnectionsRef.current = {};
+    iceCandidateQueues.current = {}; // Clear ICE candidate queues
     setBroadcastStreams({});
     setBroadcastCall(false);
     if (localStream) {
@@ -470,11 +503,19 @@ const AdminChat = () => {
           return newStreams;
         });
       });
+      socket.on("user-socket-ids", (socketIds) => {
+        console.log("Received updated socket IDs:", socketIds);
+        userToSocketMap.current = socketIds;
+        Object.entries(socketIds).forEach(([userId, socketId]) => {
+          socketToUserMap.current[socketId] = userId;
+        });
+      });
 
       return () => {
         socket.off("broadcast-call-answer");
         socket.off("broadcast-ice-candidate");
         socket.off("user-left-broadcast-call");
+        socket.off("user-socket-ids");
       };
     }
   }, [socket, broadcastCall, localStream, callType]);
@@ -508,6 +549,34 @@ const AdminChat = () => {
       };
     }
   }, [socket]);
+
+  const renderRemoteStreams = () => {
+    return Object.entries(broadcastStreams).map(([userId, stream]) => (
+      <div key={userId} className="remote-stream">
+        <h4>{users[userId] || "Unknown User"}</h4>
+        {callType === "video" ? (
+          <video
+            autoPlay
+            playsInline
+            ref={(el) => {
+              if (el && stream) {
+                el.srcObject = stream;
+              }
+            }}
+          />
+        ) : (
+          <audio
+            autoPlay
+            ref={(el) => {
+              if (el && stream) {
+                el.srcObject = stream;
+              }
+            }}
+          />
+        )}
+      </div>
+    ));
+  };
 
   return (
     <div className="chat-container">
@@ -600,40 +669,7 @@ const AdminChat = () => {
                 <video ref={localVideoRef} autoPlay muted playsInline />
               )}
             </div>
-            <div className="remote-streams">
-              {Object.entries(broadcastStreams).map(([userId, stream]) => (
-                <div key={userId} className="remote-stream">
-                  <h4>{users[userId] || "Unknown User"}</h4>
-                  {callType === "video" ? (
-                    <video
-                      ref={(el) => {
-                        remoteVideoRefs.current[userId] = el; // Keep a reference to the video element
-                        if (el && stream) {
-                          el.srcObject = stream; // Set the stream
-                          el.play().catch((e) =>
-                            console.error("Error playing video:", e)
-                          );
-                        }
-                      }}
-                      autoPlay
-                      playsInline
-                    />
-                  ) : (
-                    <audio
-                      ref={(el) => {
-                        if (el) {
-                          el.srcObject = stream; // Set the audio stream
-                          el.play().catch((e) =>
-                            console.error("Error playing audio:", e)
-                          );
-                        }
-                      }}
-                      autoPlay
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+            <div className="remote-streams">{renderRemoteStreams()}</div>
           </div>
           <button onClick={endBroadcastCall}>End Broadcast Call</button>
         </div>
