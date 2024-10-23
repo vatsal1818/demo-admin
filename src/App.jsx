@@ -18,6 +18,8 @@ import { NotificationProvider } from "./assets/Components/Notification/Notificat
 import GlobalNotification from "./assets/Components/Notification/GlobalNotification.jsx";
 import PrivateChat from "./assets/Pages/Chat/PrivateChat.jsx";
 import AllUserTradeByUser from "./assets/Pages/Alluser-trades-by-User/AllusersTradesByUser.jsx";
+import AdminCourseCreation from "./assets/Components/Course/YourCourse.jsx";
+import CourseList from "./assets/Components/Course/CourseList.jsx";
 
 function App() {
   return (
@@ -91,6 +93,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <GlobalNotification />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/course"
+                  element={
+                    <ProtectedRoute>
+                      <AdminCourseCreation />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/course-list"
+                  element={
+                    <ProtectedRoute>
+                      <CourseList />
                     </ProtectedRoute>
                   }
                 />

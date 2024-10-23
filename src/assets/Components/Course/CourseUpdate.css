@@ -1,0 +1,148 @@
+.course-update-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.back-button {
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.course-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.course-form-section,
+.content-section,
+.add-content-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    min-height: 100px;
+}
+
+.submit-button {
+    width: 100%;
+    padding: 10px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.submit-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.submit-button:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.content-list {
+    display: grid;
+    gap: 15px;
+}
+
+.content-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 15px;
+    background: #f9fafb;
+}
+
+.content-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.content-item h4 {
+    margin: 0;
+    font-weight: 500;
+}
+
+.remove-button {
+    padding: 4px 8px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.remove-button:hover {
+    background: #b91c1c;
+}
+
+
+
+.no-content {
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.loading-text {
+    color: #6b7280;
+    font-style: italic;
+}
+
+.file-input {
+    border: 1px dashed #d1d5db;
+    padding: 10px;
+    border-radius: 4px;
+    background: #f9fafb;
+}
+
+.update-form,
+.add-content-form {
+    width: 100%;
+}

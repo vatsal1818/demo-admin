@@ -25,6 +25,16 @@ const Sidebar = () => {
           <p>All User's Trade by User</p>
         </div>
       </Link>
+      <Link to="admin/course" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Your Course</p>
+        </div>
+      </Link>
+      <Link to="course-list" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Course List</p>
+        </div>
+      </Link>
     </div>
   );
 };

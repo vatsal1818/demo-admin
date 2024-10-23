@@ -103,10 +103,6 @@ const AdminChat = () => {
     broadcastPeerConnectionsRef.current = {};
     setBroadcastStreams({}); // Clear existing streams
 
-    const configuration = {
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    };
-
     Object.keys(users).forEach((userId) => {
       const socketId = userToSocketMap.current[userId];
       if (!socketId) {
@@ -142,13 +138,7 @@ const AdminChat = () => {
         }
       };
 
-      peerConnection.ontrack = (event) => {
-        console.log(`Received track from user ${userId}:`, event.streams[0]);
-        setBroadcastStreams((prev) => ({
-          ...prev,
-          [userId]: event.streams[0],
-        }));
-      };
+      // We don't need ontrack for broadcast connections from admin side
 
       peerConnection.onconnectionstatechange = () => {
         console.log(
@@ -160,11 +150,9 @@ const AdminChat = () => {
           peerConnection.connectionState === "failed" ||
           peerConnection.connectionState === "closed"
         ) {
-          setBroadcastStreams((prev) => {
-            const newStreams = { ...prev };
-            delete newStreams[userId];
-            return newStreams;
-          });
+          // Handle disconnection
+          console.log(`User ${userId} disconnected from broadcast`);
+          // You might want to update UI or internal state here
         }
       };
     });
@@ -550,34 +538,6 @@ const AdminChat = () => {
     }
   }, [socket]);
 
-  const renderRemoteStreams = () => {
-    return Object.entries(broadcastStreams).map(([userId, stream]) => (
-      <div key={userId} className="remote-stream">
-        <h4>{users[userId] || "Unknown User"}</h4>
-        {callType === "video" ? (
-          <video
-            autoPlay
-            playsInline
-            ref={(el) => {
-              if (el && stream) {
-                el.srcObject = stream;
-              }
-            }}
-          />
-        ) : (
-          <audio
-            autoPlay
-            ref={(el) => {
-              if (el && stream) {
-                el.srcObject = stream;
-              }
-            }}
-          />
-        )}
-      </div>
-    ));
-  };
-
   return (
     <div className="chat-container">
       <nav className="deletechat">
@@ -669,7 +629,6 @@ const AdminChat = () => {
                 <video ref={localVideoRef} autoPlay muted playsInline />
               )}
             </div>
-            <div className="remote-streams">{renderRemoteStreams()}</div>
           </div>
           <button onClick={endBroadcastCall}>End Broadcast Call</button>
         </div>

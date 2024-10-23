@@ -53,6 +53,9 @@ const Navbar = () => {
         <li>
           <Link to="/allusers-trade-by-user">All User's Trade by user</Link>
         </li>
+        <li>
+          <Link to="/yourcourse">Your Course</Link>
+        </li>
         {isLoggedIn ? (
           <li>
             <button onClick={handleLogout}>Logout</button>
