@@ -14,6 +14,42 @@ const CourseList = () => {
     fetchCourses();
   }, []);
 
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const getExpiryStatus = (expiryDate) => {
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilExpiry < 0) {
+      return { status: "expired", className: "expired" };
+    } else if (daysUntilExpiry <= 30) {
+      return { status: "expiring-soon", className: "expiring-soon" };
+    }
+    return { status: "active", className: "active" };
+  };
+
+  const getRemainingDays = (expiryDate) => {
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const daysRemaining = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+
+    if (daysRemaining < 0) {
+      return "Expired";
+    } else if (daysRemaining === 0) {
+      return "Expires today";
+    } else if (daysRemaining === 1) {
+      return "1 day remaining";
+    }
+    return `${daysRemaining} days remaining`;
+  };
+
   const fetchCourses = async () => {
     try {
       const response = await fetch(COURSES, {
@@ -71,7 +107,6 @@ const CourseList = () => {
           throw new Error("Failed to delete course");
         }
 
-        // Remove the deleted course from state
         setCourses(courses.filter((course) => course._id !== courseId));
       } catch (error) {
         setError(error.message);
@@ -98,7 +133,6 @@ const CourseList = () => {
           throw new Error("Failed to delete content");
         }
 
-        // Refresh course details
         fetchCourseDetails(courseId);
       } catch (error) {
         setError(error.message);
@@ -121,6 +155,70 @@ const CourseList = () => {
     fetchCourses();
   };
 
+  // Separate active and expired courses
+  const separateCourses = () => {
+    const activeCourses = [];
+    const expiredCourses = [];
+
+    courses.forEach((course) => {
+      const now = new Date();
+      const expiry = new Date(course.expiryDate);
+      if (expiry < now) {
+        expiredCourses.push(course);
+      } else {
+        activeCourses.push(course);
+      }
+    });
+
+    return { activeCourses, expiredCourses };
+  };
+
+  const renderCourseGrid = (coursesToRender) => {
+    return (
+      <div className="course-grid">
+        {coursesToRender.map((course) => {
+          const expiryStatus = getExpiryStatus(course.expiryDate);
+          return (
+            <div
+              key={course._id}
+              className={`course-card ${expiryStatus.className}`}
+            >
+              <h3 className="course-name">{course.courseName}</h3>
+              <p className="course-price">${course.price}</p>
+              <p className="course-status">Status: {course.status}</p>
+              <p className={`expiry-status ${expiryStatus.className}`}>
+                {getRemainingDays(course.expiryDate)}
+              </p>
+              <p className="expiry-date">
+                Expires: {formatDate(course.expiryDate)}
+              </p>
+              <div className="course-actions">
+                <button
+                  onClick={() => handleViewCourse(course._id)}
+                  className="view-course-btn"
+                >
+                  View Course
+                </button>
+                <button
+                  onClick={() => handleUpdateCourse(course)}
+                  className="update-course-btn"
+                >
+                  Update Course
+                </button>
+                <button
+                  onClick={() => handleDeleteCourse(course._id)}
+                  className="delete-course-btn"
+                >
+                  Delete Course
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <div className="loading">Loading...</div>;
   }
@@ -134,13 +232,22 @@ const CourseList = () => {
   }
 
   if (selectedCourse) {
+    const expiryStatus = getExpiryStatus(selectedCourse.expiryDate);
     return (
       <div className="course-details">
         <button onClick={handleBack} className="back-button">
           Back to Courses
         </button>
         <h2>{selectedCourse.courseName}</h2>
-        <p className="course-price">Price: ${selectedCourse.price}</p>
+        <div className="course-info">
+          <p className="course-price">Price: ${selectedCourse.price}</p>
+          <p className={`expiry-date ${expiryStatus.className}`}>
+            Expiry Date: {formatDate(selectedCourse.expiryDate)}
+            <span className="remaining-days">
+              ({getRemainingDays(selectedCourse.expiryDate)})
+            </span>
+          </p>
+        </div>
         <h3>Course Content:</h3>
         {selectedCourse.content.map((item, index) => (
           <div key={index} className="content-item">
@@ -172,38 +279,19 @@ const CourseList = () => {
     );
   }
 
+  const { activeCourses, expiredCourses } = separateCourses();
+
   return (
     <div className="course-list-container">
       <h2 className="course-list-title">Available Courses</h2>
-      <div className="course-grid">
-        {courses.map((course) => (
-          <div key={course._id} className="course-card">
-            <h3 className="course-name">{course.courseName}</h3>
-            <p className="course-price">${course.price}</p>
-            <p className="course-status">Status: {course.status}</p>
-            <div className="course-actions">
-              <button
-                onClick={() => handleViewCourse(course._id)}
-                className="view-course-btn"
-              >
-                View Course
-              </button>
-              <button
-                onClick={() => handleUpdateCourse(course)}
-                className="update-course-btn"
-              >
-                Update Course
-              </button>
-              <button
-                onClick={() => handleDeleteCourse(course._id)}
-                className="delete-course-btn"
-              >
-                Delete Course
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {renderCourseGrid(activeCourses)}
+
+      {expiredCourses.length > 0 && (
+        <>
+          <h2 className="course-list-title expired-title">Expired Courses</h2>
+          {renderCourseGrid(expiredCourses)}
+        </>
+      )}
     </div>
   );
 };

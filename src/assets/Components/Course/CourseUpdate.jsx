@@ -6,6 +6,13 @@ const CourseUpdate = ({ course, onBack }) => {
   const [courseData, setCourseData] = useState({
     courseName: course?.courseName || "",
     price: course?.price || 0,
+    expiryDate: course?.expiryDate
+      ? new Date(course.expiryDate).toISOString().split("T")[0]
+      : "",
+    validityPeriod: {
+      duration: course?.validityPeriod?.duration || "",
+      unit: course?.validityPeriod?.unit || "days",
+    },
   });
   const [contentItems, setContentItems] = useState(course?.content || []);
   const [newContent, setNewContent] = useState({
@@ -24,7 +31,17 @@ const CourseUpdate = ({ course, onBack }) => {
   const handleInputChange = (e, type) => {
     const { name, value } = e.target;
     if (type === "course") {
-      setCourseData((prev) => ({ ...prev, [name]: value }));
+      if (name === "validityDuration" || name === "validityUnit") {
+        setCourseData((prev) => ({
+          ...prev,
+          validityPeriod: {
+            ...prev.validityPeriod,
+            [name === "validityDuration" ? "duration" : "unit"]: value,
+          },
+        }));
+      } else {
+        setCourseData((prev) => ({ ...prev, [name]: value }));
+      }
     } else {
       setNewContent((prev) => ({ ...prev, [name]: value }));
     }
@@ -51,10 +68,19 @@ const CourseUpdate = ({ course, onBack }) => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(courseData),
+        body: JSON.stringify({
+          ...courseData,
+          validityPeriod: {
+            duration: parseInt(courseData.validityPeriod.duration),
+            unit: courseData.validityPeriod.unit,
+          },
+        }),
       });
 
-      if (!response.ok) throw new Error("Failed to update course");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update course");
+      }
 
       const data = await response.json();
       alert("Course updated successfully!");
@@ -139,6 +165,40 @@ const CourseUpdate = ({ course, onBack }) => {
             onChange={(e) => handleInputChange(e, "course")}
             required
           />
+        </div>
+        <div className="form-group">
+          <label>Expiry Date</label>
+          <input
+            type="date"
+            name="expiryDate"
+            value={courseData.expiryDate}
+            onChange={(e) => handleInputChange(e, "course")}
+            required
+          />
+        </div>
+        <div className="form-group validity-period">
+          <label>Validity Period</label>
+          <div className="validity-inputs">
+            <input
+              type="number"
+              name="validityDuration"
+              value={courseData.validityPeriod.duration}
+              onChange={(e) => handleInputChange(e, "course")}
+              min="1"
+              required
+              className="validity-duration"
+            />
+            <select
+              name="validityUnit"
+              value={courseData.validityPeriod.unit}
+              onChange={(e) => handleInputChange(e, "course")}
+              className="validity-unit"
+            >
+              <option value="days">Days</option>
+              <option value="months">Months</option>
+              <option value="years">Years</option>
+            </select>
+          </div>
         </div>
         <button
           type="submit"

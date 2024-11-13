@@ -10,6 +10,11 @@ const AdminCourseCreation = () => {
   const [courseData, setCourseData] = useState({
     courseName: "",
     price: "",
+    expiryDate: "",
+    validityPeriod: {
+      duration: "",
+      unit: "months",
+    },
   });
   const [contentItems, setContentItems] = useState([]);
   const [currentContent, setCurrentContent] = useState({
@@ -20,7 +25,15 @@ const AdminCourseCreation = () => {
   });
 
   const resetForm = () => {
-    setCourseData({ courseName: "", price: "" });
+    setCourseData({
+      courseName: "",
+      price: "",
+      expiryDate: "",
+      validityPeriod: {
+        duration: "",
+        unit: "months",
+      },
+    });
     setContentItems([]);
     setCurrentContent({
       title: "",
@@ -45,7 +58,10 @@ const AdminCourseCreation = () => {
         body: JSON.stringify(courseData),
       });
 
-      if (!response.ok) throw new Error("Failed to create course");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create course");
+      }
 
       const data = await response.json();
       setCourseId(data.courseId);
@@ -83,7 +99,7 @@ const AdminCourseCreation = () => {
         throw new Error(errorData.message || "Failed to add course content");
       }
 
-      const newContentItem = { ...currentContent, id: Date.now() }; // Use timestamp as temporary id
+      const newContentItem = { ...currentContent, id: Date.now() };
       setContentItems([...contentItems, newContentItem]);
       setCurrentContent({
         title: "",
@@ -107,12 +123,27 @@ const AdminCourseCreation = () => {
     }
   };
 
-  const handleInputChange = (e, formType) => {
+  const handleInputChange = (e, type) => {
     const { name, value } = e.target;
-    if (formType === "course") {
-      setCourseData((prev) => ({ ...prev, [name]: value }));
+
+    if (type === "validity") {
+      setCourseData((prev) => ({
+        ...prev,
+        validityPeriod: {
+          ...prev.validityPeriod,
+          [name]: value,
+        },
+      }));
+    } else if (type === "course") {
+      setCourseData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     } else {
-      setCurrentContent((prev) => ({ ...prev, [name]: value }));
+      setCurrentContent((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
   };
 
@@ -153,6 +184,46 @@ const AdminCourseCreation = () => {
                 value={courseData.price}
                 onChange={(e) => handleInputChange(e, "course")}
                 placeholder="Enter price"
+                required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Course Validity Period</label>
+              <div className="validity-inputs">
+                <input
+                  type="number"
+                  name="duration"
+                  value={courseData.validityPeriod.duration}
+                  onChange={(e) => handleInputChange(e, "validity")}
+                  placeholder="Duration"
+                  required
+                  min="1"
+                  className="form-input duration-input"
+                />
+                <select
+                  name="unit"
+                  value={courseData.validityPeriod.unit}
+                  onChange={(e) => handleInputChange(e, "validity")}
+                  className="form-select unit-select"
+                >
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="months">Months</option>
+                  <option value="years">Years</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Expiry Date</label>
+              <input
+                type="date"
+                name="expiryDate"
+                value={courseData.expiryDate}
+                onChange={(e) => handleInputChange(e, "course")}
+                min={new Date().toISOString().split("T")[0]}
                 required
                 className="form-input"
               />

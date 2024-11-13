@@ -27,12 +27,22 @@ const Sidebar = () => {
       </Link>
       <Link to="admin/course" style={{ textDecoration: "none" }}>
         <div className="sidebar-item">
-          <p>Your Course</p>
+          <p>Add Course</p>
         </div>
       </Link>
       <Link to="course-list" style={{ textDecoration: "none" }}>
         <div className="sidebar-item">
           <p>Course List</p>
+        </div>
+      </Link>
+      <Link to="purchased-course" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Purchased Course</p>
+        </div>
+      </Link>
+      <Link to="youtube-course" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Youtube Course</p>
         </div>
       </Link>
     </div>

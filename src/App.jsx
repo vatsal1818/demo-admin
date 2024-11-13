@@ -20,6 +20,8 @@ import PrivateChat from "./assets/Pages/Chat/PrivateChat.jsx";
 import AllUserTradeByUser from "./assets/Pages/Alluser-trades-by-User/AllusersTradesByUser.jsx";
 import AdminCourseCreation from "./assets/Components/Course/YourCourse.jsx";
 import CourseList from "./assets/Components/Course/CourseList.jsx";
+import AdminPurchasedCourses from "./assets/Components/Course/PurchasedCourse.jsx";
+import YoutubeCourse from "./assets/Components/Course/YoutubeCourse.jsx";
 
 function App() {
   return (
@@ -109,6 +111,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <CourseList />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/purchased-course"
+                  element={
+                    <ProtectedRoute>
+                      <AdminPurchasedCourses />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/youtube-course"
+                  element={
+                    <ProtectedRoute>
+                      <YoutubeCourse />
                     </ProtectedRoute>
                   }
                 />
