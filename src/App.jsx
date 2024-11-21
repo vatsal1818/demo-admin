@@ -22,6 +22,10 @@ import AdminCourseCreation from "./assets/Components/Course/YourCourse.jsx";
 import CourseList from "./assets/Components/Course/CourseList.jsx";
 import AdminPurchasedCourses from "./assets/Components/Course/PurchasedCourse.jsx";
 import YoutubeCourse from "./assets/Components/Course/YoutubeCourse.jsx";
+import About from "./assets/Pages/About/About.jsx";
+import Testimonials from "./assets/Pages/Testimonials/Testimonials.jsx";
+import ShortsVideo from "./assets/Pages/Shorts-Video/ShortsVideo.jsx";
+import BannerUpload from "./assets/Pages/Banner/BannerUpload.jsx";
 
 function App() {
   return (
@@ -127,6 +131,38 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <YoutubeCourse />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/about"
+                  element={
+                    <ProtectedRoute>
+                      <About />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/shorts-video"
+                  element={
+                    <ProtectedRoute>
+                      <ShortsVideo />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/testimonials"
+                  element={
+                    <ProtectedRoute>
+                      <Testimonials />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/banner-upload"
+                  element={
+                    <ProtectedRoute>
+                      <BannerUpload />
                     </ProtectedRoute>
                   }
                 />

@@ -7,7 +7,12 @@ const Navbar = () => {
   const navigate = useNavigate();
   const API_URL = process.env.REACT_APP_API_URL + POST_LOGOUT;
 
-  const isLoggedIn = !!localStorage.getItem("accessToken");
+  const isLoggedIn = () => {
+    return Boolean(
+      localStorage.getItem("accessToken") &&
+        localStorage.getItem("refreshToken")
+    );
+  };
 
   const handleLogout = async () => {
     try {
@@ -56,7 +61,7 @@ const Navbar = () => {
         <li>
           <Link to="/yourcourse">Your Course</Link>
         </li>
-        {isLoggedIn ? (
+        {isLoggedIn() ? (
           <li>
             <button onClick={handleLogout}>Logout</button>
           </li>

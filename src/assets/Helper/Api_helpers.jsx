@@ -14,4 +14,14 @@ export const COURSE_DETAILS = `${process.env.REACT_APP_API_URL}/api/courses/deta
 
 export const PURCHASED_COURSE = `${process.env.REACT_APP_API_URL}/api/admin/purchases`;
 
-export const ADMIN_UPLOADS = `${process.env.REACT_APP_API_URL}/api/content`;
+export const ADMIN_UPLOADS = `${process.env.REACT_APP_API_URL}/api/homepage-content`;
+
+export const ADMIN_TESTIMONIALS = `${process.env.REACT_APP_API_URL}/api/testimonials`;
+
+export const ADMIN_ABOUT_US = `${process.env.REACT_APP_API_URL}/api/about-us-content`;
+
+export const ADMIN_WHY_CHOOSE_US = `${process.env.REACT_APP_API_URL}/api/why-choose-us-content`;
+
+export const ADMIN_SHORTS_VIDEO = `${process.env.REACT_APP_API_URL}/api/admin/video`;
+
+export const ADMIN_BANNER_UPLOADS = `${process.env.REACT_APP_API_URL}/api/banners`;

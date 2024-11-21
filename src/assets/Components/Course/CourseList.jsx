@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { COURSES } from "../../Helper/Api_helpers";
+import { Trash2 } from "lucide-react";
 import "./CourseList.css";
 import CourseUpdate from "./CourseUpdate";
 
 const CourseList = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [comments, setComments] = useState([]); // State for comments
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -84,6 +86,19 @@ const CourseList = () => {
 
       const data = await response.json();
       setSelectedCourse(data.data);
+
+      // Fetch comments for the course
+      const commentsResponse = await fetch(`${COURSES}/${courseId}/comments`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!commentsResponse.ok) {
+        throw new Error("Failed to fetch comments");
+      }
+
+      const commentsData = await commentsResponse.json();
+      setComments(commentsData.data);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -140,6 +155,35 @@ const CourseList = () => {
     }
   };
 
+  const handleDeleteComment = async (commentId, courseId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?"))
+      return;
+
+    try {
+      const response = await fetch(
+        `${COURSES}/${courseId}/comments/${commentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete comment");
+      }
+
+      setComments((prevComments) =>
+        prevComments.filter((comment) => comment._id !== commentId)
+      );
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+    }
+  };
+
   const handleViewCourse = (courseId) => {
     fetchCourseDetails(courseId);
   };
@@ -152,6 +196,7 @@ const CourseList = () => {
   const handleBack = () => {
     setSelectedCourse(null);
     setIsUpdating(false);
+    setComments([]);
     fetchCourses();
   };
 
@@ -275,6 +320,30 @@ const CourseList = () => {
             )}
           </div>
         ))}
+        <h3>Comments:</h3>
+        {comments.length > 0 ? (
+          <ul className="comment-list">
+            {comments.map((comment) => (
+              <li key={comment._id} className="comment-item">
+                <p>
+                  <strong>{comment.user.username}</strong>: {comment.content}
+                </p>
+                <p className="comment-date">
+                  {new Date(comment.createdAt).toLocaleString()}
+                </p>
+                <button
+                  onClick={() => handleDeleteComment(comment._id)}
+                  className="delete-comment-btn"
+                  title="Delete comment"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No comments available for this course.</p>
+        )}
       </div>
     );
   }

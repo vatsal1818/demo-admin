@@ -10,11 +10,13 @@ const AdminCourseCreation = () => {
   const [courseData, setCourseData] = useState({
     courseName: "",
     price: "",
+    courseDescription: "",
     expiryDate: "",
     validityPeriod: {
       duration: "",
       unit: "months",
     },
+    thumbnail: null,
   });
   const [contentItems, setContentItems] = useState([]);
   const [currentContent, setCurrentContent] = useState({
@@ -28,11 +30,13 @@ const AdminCourseCreation = () => {
     setCourseData({
       courseName: "",
       price: "",
+      courseDescription: "",
       expiryDate: "",
       validityPeriod: {
         duration: "",
         unit: "months",
       },
+      thumbnail: null,
     });
     setContentItems([]);
     setCurrentContent({
@@ -51,11 +55,25 @@ const AdminCourseCreation = () => {
     setError(null);
 
     try {
+      const formData = new FormData();
+      formData.append("courseName", courseData.courseName);
+      formData.append("price", courseData.price);
+      formData.append("courseDescription", courseData.courseDescription);
+      formData.append("expiryDate", courseData.expiryDate);
+      formData.append(
+        "validityPeriod[duration]",
+        courseData.validityPeriod.duration
+      );
+      formData.append("validityPeriod[unit]", courseData.validityPeriod.unit);
+
+      if (courseData.thumbnail) {
+        formData.append("image", courseData.thumbnail);
+      }
+
       const response = await fetch(COURSES, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(courseData),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -116,10 +134,14 @@ const AdminCourseCreation = () => {
     }
   };
 
-  const handleFileChange = (e, field) => {
+  const handleFileChange = (e, field, type = "content") => {
     const file = e.target.files[0];
     if (file) {
-      setCurrentContent((prev) => ({ ...prev, [field]: file }));
+      if (type === "course") {
+        setCourseData((prev) => ({ ...prev, thumbnail: file }));
+      } else {
+        setCurrentContent((prev) => ({ ...prev, [field]: file }));
+      }
     }
   };
 
@@ -173,6 +195,30 @@ const AdminCourseCreation = () => {
                 placeholder="Enter course name"
                 required
                 className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Course Description</label>
+              <input
+                type="text"
+                name="courseDescription"
+                value={courseData.courseDescription}
+                onChange={(e) => handleInputChange(e, "course")}
+                placeholder="Enter course description"
+                required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Course Thumbnail</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange(e, "thumbnail", "course")}
+                required
+                className="file-input"
               />
             </div>
 

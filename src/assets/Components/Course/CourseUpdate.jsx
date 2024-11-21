@@ -5,6 +5,7 @@ import "./CourseUpdate.css";
 const CourseUpdate = ({ course, onBack }) => {
   const [courseData, setCourseData] = useState({
     courseName: course?.courseName || "",
+    courseDescription: course?.courseDescription || "",
     price: course?.price || 0,
     expiryDate: course?.expiryDate
       ? new Date(course.expiryDate).toISOString().split("T")[0]
@@ -13,6 +14,7 @@ const CourseUpdate = ({ course, onBack }) => {
       duration: course?.validityPeriod?.duration || "",
       unit: course?.validityPeriod?.unit || "days",
     },
+    thumbnail: null,
   });
   const [contentItems, setContentItems] = useState(course?.content || []);
   const [newContent, setNewContent] = useState({
@@ -26,6 +28,7 @@ const CourseUpdate = ({ course, onBack }) => {
   const [selectedFiles, setSelectedFiles] = useState({
     thumbnail: null,
     video: null,
+    courseThumbnail: null,
   });
 
   const handleInputChange = (e, type) => {
@@ -50,11 +53,19 @@ const CourseUpdate = ({ course, onBack }) => {
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
-      setNewContent((prev) => ({ ...prev, [field]: file }));
-      setSelectedFiles((prev) => ({
-        ...prev,
-        [field]: file.name,
-      }));
+      if (field === "courseThumbnail") {
+        setCourseData((prev) => ({ ...prev, thumbnail: file }));
+        setSelectedFiles((prev) => ({
+          ...prev,
+          courseThumbnail: file.name,
+        }));
+      } else {
+        setNewContent((prev) => ({ ...prev, [field]: file }));
+        setSelectedFiles((prev) => ({
+          ...prev,
+          [field]: file.name,
+        }));
+      }
     }
   };
 
@@ -64,17 +75,26 @@ const CourseUpdate = ({ course, onBack }) => {
     setError(null);
 
     try {
+      const formData = new FormData();
+      formData.append("courseName", courseData.courseName);
+      formData.append("courseDescription", courseData.courseDescription);
+      formData.append("price", courseData.price);
+      formData.append("expiryDate", courseData.expiryDate);
+      formData.append(
+        "validityPeriod[duration]",
+        courseData.validityPeriod.duration
+      );
+      formData.append("validityPeriod[unit]", courseData.validityPeriod.unit);
+
+      // Append thumbnail if a new file is selected
+      if (courseData.thumbnail) {
+        formData.append("image", courseData.thumbnail);
+      }
+
       const response = await fetch(`${COURSES}/${course._id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          ...courseData,
-          validityPeriod: {
-            duration: parseInt(courseData.validityPeriod.duration),
-            unit: courseData.validityPeriod.unit,
-          },
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -84,6 +104,11 @@ const CourseUpdate = ({ course, onBack }) => {
 
       const data = await response.json();
       alert("Course updated successfully!");
+
+      // Optional: Update the local state with the new course data
+      // This assumes the backend returns the updated course object
+      // If the backend returns the updated course, you can update the parent component's state
+      // onCourseUpdate(data.data);
     } catch (error) {
       setError(error.message);
       console.error("Error updating course:", error);
@@ -152,6 +177,41 @@ const CourseUpdate = ({ course, onBack }) => {
             type="text"
             name="courseName"
             value={courseData.courseName}
+            onChange={(e) => handleInputChange(e, "course")}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>Course Thumbnail</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileChange(e, "courseThumbnail")}
+          />
+          {selectedFiles.courseThumbnail && (
+            <span className="file-name">{selectedFiles.courseThumbnail}</span>
+          )}
+          {course.courseThumbnailUrl && (
+            <div className="current-thumbnail">
+              <p>Current Thumbnail:</p>
+              <img
+                src={course.courseThumbnailUrl}
+                alt="Current Course Thumbnail"
+                style={{
+                  maxWidth: "200px",
+                  maxHeight: "200px",
+                  marginTop: "10px",
+                }}
+              />
+            </div>
+          )}
+        </div>
+        <div className="form-group">
+          <label>Course Description</label>
+          <input
+            type="text"
+            name="courseDescription"
+            value={courseData.courseDescription}
             onChange={(e) => handleInputChange(e, "course")}
             required
           />

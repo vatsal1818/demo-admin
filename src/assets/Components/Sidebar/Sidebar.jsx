@@ -42,7 +42,27 @@ const Sidebar = () => {
       </Link>
       <Link to="youtube-course" style={{ textDecoration: "none" }}>
         <div className="sidebar-item">
-          <p>Youtube Course</p>
+          <p>Home Page </p>
+        </div>
+      </Link>
+      <Link to="about" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>About Page </p>
+        </div>
+      </Link>
+      <Link to="shorts-video" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Shorts Video Page </p>
+        </div>
+      </Link>
+      <Link to="testimonials" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Testimonials Page </p>
+        </div>
+      </Link>
+      <Link to="banner-upload" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Banner Upload Page </p>
         </div>
       </Link>
     </div>

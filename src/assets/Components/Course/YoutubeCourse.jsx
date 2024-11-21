@@ -23,7 +23,6 @@ const YoutubeCourse = () => {
       setParagraph(response.data.paragraph);
       setButton(response.data.button);
       setPreview(response.data.imageUrl);
-      console.log(response.data.paragraph);
     } catch (error) {
       console.error("Error fetching content:", error);
       setMessage("Failed to load current content");
@@ -33,7 +32,6 @@ const YoutubeCourse = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Create a preview URL for the selected image
       setPreview(URL.createObjectURL(file));
       setImage(file);
     }
@@ -45,7 +43,6 @@ const YoutubeCourse = () => {
     setMessage("");
 
     try {
-      // Create FormData object
       const formData = new FormData();
       formData.append("title", title);
       formData.append("paragraph", paragraph);
@@ -62,7 +59,6 @@ const YoutubeCourse = () => {
 
       if (response.data.status === "success") {
         setMessage("Content updated successfully!");
-        // Update the preview with the new Cloudinary URL
         setPreview(response.data.data.imageUrl);
       }
     } catch (error) {
@@ -98,7 +94,7 @@ const YoutubeCourse = () => {
         </div>
 
         <div className="form-group">
-          <label>button text</label>
+          <label>Button Text</label>
           <input
             type="text"
             value={button}
@@ -124,20 +120,20 @@ const YoutubeCourse = () => {
           </div>
         )}
 
-        {message && (
-          <div
-            className={`message ${
-              message.includes("Failed") ? "error" : "success"
-            }`}
-          >
-            {message}
-          </div>
-        )}
-
         <button type="submit" disabled={loading} className="submit-button">
           {loading ? "Updating..." : "Update Content"}
         </button>
       </form>
+
+      {message && (
+        <div
+          className={`message ${
+            message.includes("Failed") ? "error" : "success"
+          }`}
+        >
+          {message}
+        </div>
+      )}
     </div>
   );
 };
