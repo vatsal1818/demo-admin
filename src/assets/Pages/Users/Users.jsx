@@ -10,6 +10,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faUserTimes } from "@fortawesome/free-solid-svg-icons";
 import { useNotification } from "../../Components/Notification/NotificationContext.jsx";
 import GlobalNotification from "../../Components/Notification/GlobalNotification.jsx";
+import { faLink } from "@fortawesome/free-solid-svg-icons";
+import UserLinkControl from "../../Components/AdminLinkControl/AdminLinkControl.jsx";
 
 const Users = () => {
   const navigate = useNavigate();
@@ -27,6 +29,8 @@ const Users = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [pendingNotification, setPendingNotification] = useState(null);
   const { addOrUpdateNotification } = useNotification();
+  const [linkControlUser, setLinkControlUser] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -239,6 +243,16 @@ const Users = () => {
     }
   }, [selectedUser]);
 
+  const handleLinkControlClick = (user) => {
+    setLinkControlUser(user);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setLinkControlUser(null);
+  };
+
   if (error) {
     return <div>Error: {error}</div>;
   }
@@ -273,6 +287,7 @@ const Users = () => {
                 <th>Action</th>
                 <th>Chat</th>
                 <th>Chat Status</th>
+                <th>Link Control</th>
               </tr>
             </thead>
             <tbody>
@@ -316,6 +331,14 @@ const Users = () => {
                       />
                     </button>
                   </td>
+                  <td>
+                    <button
+                      onClick={() => handleLinkControlClick(user)}
+                      className="link-control-btn"
+                    >
+                      Link Control
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -334,6 +357,14 @@ const Users = () => {
               isChatOpen={isChatOpen} // Pass the state to the PrivateChat
             />
           </div>
+        )}
+        {isModalOpen && linkControlUser && (
+          <UserLinkControl
+            userId={linkControlUser._id}
+            username={linkControlUser.username}
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+          />
         )}
       </div>
     </div>

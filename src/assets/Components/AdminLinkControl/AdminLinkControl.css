@@ -1,0 +1,129 @@
+.link-control-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.link-control-modal {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    min-width: 400px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.link-control-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eee;
+}
+
+.link-control-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.link-control-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.link-control-close:hover {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.link-control-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.link-toggle-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.link-toggle-container:last-child {
+    border-bottom: none;
+}
+
+.link-name {
+    font-size: 1rem;
+    color: #333;
+}
+
+.link-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.link-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.link-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.link-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.link-toggle-slider {
+    background-color: #2196F3;
+}
+
+input:disabled+.link-toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input:checked+.link-toggle-slider:before {
+    transform: translateX(24px);
+}

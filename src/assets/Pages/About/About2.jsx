@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "./YoutubeCourse.css";
-import { ADMIN_UPLOADS } from "../../Helper/Api_helpers";
-import SocialStats from "../../Pages/SocialStats/SocialStats";
+import { ADMIN_ABOUT_US_2 } from "../../Helper/Api_helpers";
 
-const YoutubeCourse = () => {
+const About2 = () => {
   const [title, setTitle] = useState("");
-  const [upperTitle, setUpperTitle] = useState("");
+  const [titleSpan, setTitleSpan] = useState("");
   const [paragraph, setParagraph] = useState("");
   const [button, setButton] = useState("");
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [aboutLoading, setAboutLoading] = useState(false);
+  const [aboutMessage, setAboutMessage] = useState("");
 
   useEffect(() => {
     fetchContent();
@@ -20,75 +18,68 @@ const YoutubeCourse = () => {
 
   const fetchContent = async () => {
     try {
-      const response = await axios.get(ADMIN_UPLOADS);
-      setTitle(response.data.title);
-      setUpperTitle(response.data.upperTitle);
-      setParagraph(response.data.paragraph);
-      setButton(response.data.button);
-      setPreview(response.data.imageUrl);
+      // Fetch About Us content
+      const aboutResponse = await axios.get(ADMIN_ABOUT_US_2);
+      setTitle(aboutResponse.data.title);
+      setTitleSpan(aboutResponse.data.titleSpan);
+      setParagraph(aboutResponse.data.paragraph);
+      setButton(aboutResponse.data.button);
+      setPreview(aboutResponse.data.imageUrl);
     } catch (error) {
       console.error("Error fetching content:", error);
-      setMessage("Failed to load current content");
     }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Create a preview URL for the selected image
       setPreview(URL.createObjectURL(file));
       setImage(file);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleAboutSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage("");
+    setAboutLoading(true);
+    setAboutMessage("");
 
     try {
       const formData = new FormData();
       formData.append("title", title);
-      formData.append("upperTitle", upperTitle);
+      formData.append("titleSpan", titleSpan);
       formData.append("paragraph", paragraph);
       formData.append("button", button);
       if (image) {
         formData.append("image", image);
       }
 
-      const response = await axios.post(ADMIN_UPLOADS, formData, {
+      const response = await axios.post(ADMIN_ABOUT_US_2, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
       if (response.data.status === "success") {
-        setMessage("Content updated successfully!");
+        setAboutMessage("About Us 2 content updated successfully!");
         setPreview(response.data.data.imageUrl);
       }
     } catch (error) {
-      console.error("Error updating content:", error);
-      setMessage(error.response?.data?.message || "Failed to update content");
+      console.error("Error updating About Us content:", error);
+      setAboutMessage(
+        error.response?.data?.message || "Failed to update About Us content"
+      );
     } finally {
-      setLoading(false);
+      setAboutLoading(false);
     }
   };
 
   return (
-    <div className="admin-container">
-      <h1 className="admin-title">Admin Dashboard</h1>
-
-      <form onSubmit={handleSubmit} className="admin-form">
+    <div className="section-container">
+      <h2 className="section-title">About Us Content 2</h2>
+      <form onSubmit={handleAboutSubmit} className="admin-form">
         <div className="form-group">
-          <label>Website Upper Title</label>
-          <input
-            type="text"
-            value={upperTitle}
-            onChange={(e) => setUpperTitle(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label>Website Title</label>
+          <label>About Us Title 2</label>
           <input
             type="text"
             value={title}
@@ -97,17 +88,25 @@ const YoutubeCourse = () => {
           />
         </div>
         <div className="form-group">
-          <label>Website Paragraph</label>
+          <label>About Us Title Span 2</label>
           <input
             type="text"
-            value={paragraph}
-            onChange={(e) => setParagraph(e.target.value)}
+            value={titleSpan}
+            onChange={(e) => setTitleSpan(e.target.value)}
             required
           />
         </div>
-
         <div className="form-group">
-          <label>Button Text</label>
+          <label>About Us Paragraph 2</label>
+          <textarea
+            value={paragraph}
+            onChange={(e) => setParagraph(e.target.value)}
+            required
+            rows={4}
+          />
+        </div>
+        <div className="form-group">
+          <label>Button Text 2</label>
           <input
             type="text"
             value={button}
@@ -115,9 +114,8 @@ const YoutubeCourse = () => {
             required
           />
         </div>
-
         <div className="form-group">
-          <label>Upload Image</label>
+          <label>Upload Image 2</label>
           <input
             type="file"
             onChange={handleImageChange}
@@ -128,28 +126,26 @@ const YoutubeCourse = () => {
 
         {preview && (
           <div className="preview-container">
-            <h3>Preview</h3>
+            <h3>Preview 2</h3>
             <img src={preview} alt="Preview" className="preview-image" />
           </div>
         )}
 
-        <button type="submit" disabled={loading} className="submit-button">
-          {loading ? "Updating..." : "Update Content"}
+        {aboutMessage && (
+          <div
+            className={`message ${
+              aboutMessage.includes("Failed") ? "error" : "success"
+            }`}
+          >
+            {aboutMessage}
+          </div>
+        )}
+
+        <button type="submit" disabled={aboutLoading} className="submit-button">
+          {aboutLoading ? "Updating... 2" : "Update About Us 2"}
         </button>
       </form>
-
-      {message && (
-        <div
-          className={`message ${
-            message.includes("Failed") ? "error" : "success"
-          }`}
-        >
-          {message}
-        </div>
-      )}
-      <SocialStats />
     </div>
   );
 };
-
-export default YoutubeCourse;
+export default About2;

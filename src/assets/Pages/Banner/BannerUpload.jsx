@@ -103,7 +103,7 @@ const BannerUpload = () => {
             multiple
             onChange={handleFileChange}
             accept="image/*"
-            className="file-input"
+            className="form-input"
           />
           {selectedFiles.length > 0 && (
             <div className="selected-files">

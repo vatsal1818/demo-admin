@@ -65,6 +65,21 @@ const Sidebar = () => {
           <p>Banner Upload Page </p>
         </div>
       </Link>
+      <Link to="coupon-code" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Coupon Code </p>
+        </div>
+      </Link>
+      <Link to="contact-us" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>Contact Us </p>
+        </div>
+      </Link>
+      <Link to="home-page2" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <p>HomePage Why choose us </p>
+        </div>
+      </Link>
     </div>
   );
 };

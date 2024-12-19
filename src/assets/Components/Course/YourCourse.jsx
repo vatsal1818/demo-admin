@@ -10,6 +10,7 @@ const AdminCourseCreation = () => {
   const [courseData, setCourseData] = useState({
     courseName: "",
     price: "",
+    offerPrice: "",
     courseDescription: "",
     expiryDate: "",
     validityPeriod: {
@@ -17,6 +18,7 @@ const AdminCourseCreation = () => {
       unit: "months",
     },
     thumbnail: null,
+    video: null,
   });
   const [contentItems, setContentItems] = useState([]);
   const [currentContent, setCurrentContent] = useState({
@@ -30,6 +32,7 @@ const AdminCourseCreation = () => {
     setCourseData({
       courseName: "",
       price: "",
+      offerPrice: "",
       courseDescription: "",
       expiryDate: "",
       validityPeriod: {
@@ -37,6 +40,7 @@ const AdminCourseCreation = () => {
         unit: "months",
       },
       thumbnail: null,
+      video: null,
     });
     setContentItems([]);
     setCurrentContent({
@@ -58,6 +62,7 @@ const AdminCourseCreation = () => {
       const formData = new FormData();
       formData.append("courseName", courseData.courseName);
       formData.append("price", courseData.price);
+      formData.append("offerPrice", courseData.offerPrice);
       formData.append("courseDescription", courseData.courseDescription);
       formData.append("expiryDate", courseData.expiryDate);
       formData.append(
@@ -67,7 +72,11 @@ const AdminCourseCreation = () => {
       formData.append("validityPeriod[unit]", courseData.validityPeriod.unit);
 
       if (courseData.thumbnail) {
-        formData.append("image", courseData.thumbnail);
+        formData.append("thumbnail", courseData.thumbnail);
+      }
+
+      if (courseData.video) {
+        formData.append("video", courseData.video);
       }
 
       const response = await fetch(COURSES, {
@@ -138,7 +147,12 @@ const AdminCourseCreation = () => {
     const file = e.target.files[0];
     if (file) {
       if (type === "course") {
-        setCourseData((prev) => ({ ...prev, thumbnail: file }));
+        // Check the field and set either thumbnail or video
+        if (field === "thumbnail") {
+          setCourseData((prev) => ({ ...prev, thumbnail: file }));
+        } else if (field === "video") {
+          setCourseData((prev) => ({ ...prev, video: file }));
+        }
       } else {
         setCurrentContent((prev) => ({ ...prev, [field]: file }));
       }
@@ -218,7 +232,18 @@ const AdminCourseCreation = () => {
                 accept="image/*"
                 onChange={(e) => handleFileChange(e, "thumbnail", "course")}
                 required
-                className="file-input"
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Course video</label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => handleFileChange(e, "video", "course")}
+                required
+                className="form-input"
               />
             </div>
 
@@ -231,6 +256,18 @@ const AdminCourseCreation = () => {
                 onChange={(e) => handleInputChange(e, "course")}
                 placeholder="Enter price"
                 required
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Offer Price (Optional)</label>
+              <input
+                type="number"
+                name="offerPrice"
+                value={courseData.offerPrice}
+                onChange={(e) => handleInputChange(e, "course")}
+                placeholder="Enter offer price (optional)"
                 className="form-input"
               />
             </div>
@@ -318,7 +355,7 @@ const AdminCourseCreation = () => {
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleFileChange(e, "thumbnail")}
-                  className="file-input"
+                  className="form-input"
                 />
               </div>
 
@@ -328,7 +365,7 @@ const AdminCourseCreation = () => {
                   type="file"
                   accept="video/*"
                   onChange={(e) => handleFileChange(e, "video")}
-                  className="file-input"
+                  className="form-input"
                 />
               </div>
 

@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { COURSES } from "../../Helper/Api_helpers";
+import { ADMIN_CHECK, COURSES } from "../../Helper/Api_helpers";
 import { Trash2 } from "lucide-react";
 import "./CourseList.css";
 import CourseUpdate from "./CourseUpdate";
+import ContentAttachments from "./ContentAttachment";
 
 const CourseList = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [comments, setComments] = useState([]); // State for comments
+  const [comments, setComments] = useState([]);
+  const [comment, setComment] = useState([]); // State for comments
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [adminReplyText, setAdminReplyText] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -22,6 +26,89 @@ const CourseList = () => {
       month: "long",
       day: "numeric",
     });
+  };
+
+  useEffect(() => {
+    // Check if the user is an admin
+    const checkAdminStatus = async () => {
+      try {
+        const response = await fetch(ADMIN_CHECK, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsAdmin(data.isAdmin);
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
+
+  const handleAdminReply = async (courseId, contentId, commentId) => {
+    try {
+      console.log(courseId, contentId, commentId);
+
+      // Ensure all parameters are defined
+      if (!courseId || !contentId || !commentId) {
+        console.error("Missing required parameters for admin reply");
+        return;
+      }
+
+      const replyContent = adminReplyText[commentId];
+
+      // Validate reply content
+      if (!replyContent || replyContent.trim() === "") {
+        console.error("Reply content cannot be empty");
+        return;
+      }
+
+      const response = await fetch(
+        `${COURSES}/${courseId}/content/${contentId}/comments/${commentId}/reply`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+          body: JSON.stringify({
+            content: replyContent,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to send admin reply");
+      }
+
+      const data = await response.json();
+
+      // Update comments state to include the admin reply
+      setComments((prev) => ({
+        ...prev,
+        [contentId]: prev[contentId].map((comment) =>
+          comment._id === commentId ? data.data : comment
+        ),
+      }));
+
+      // Clear the reply text
+      setAdminReplyText((prev) => ({
+        ...prev,
+        [commentId]: "",
+      }));
+    } catch (error) {
+      console.error("Error sending admin reply:", error);
+      // Optionally show an error message to the user
+    }
   };
 
   const getExpiryStatus = (expiryDate) => {
@@ -87,18 +174,28 @@ const CourseList = () => {
       const data = await response.json();
       setSelectedCourse(data.data);
 
-      // Fetch comments for the course
-      const commentsResponse = await fetch(`${COURSES}/${courseId}/comments`, {
-        method: "GET",
-        credentials: "include",
-      });
+      // Fetch comments for each content item
+      const contentComments = {};
+      for (const content of data.data.content) {
+        const commentsResponse = await fetch(
+          `${COURSES}/${courseId}/content/${content._id}/comments`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
 
-      if (!commentsResponse.ok) {
-        throw new Error("Failed to fetch comments");
+        if (!commentsResponse.ok) {
+          throw new Error(
+            `Failed to fetch comments for content ${content._id}`
+          );
+        }
+
+        const commentsData = await commentsResponse.json();
+        contentComments[content._id] = commentsData.data;
       }
 
-      const commentsData = await commentsResponse.json();
-      setComments(commentsData.data);
+      setComments(contentComments);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -155,32 +252,33 @@ const CourseList = () => {
     }
   };
 
-  const handleDeleteComment = async (commentId, courseId) => {
+  const handleDeleteComment = async (contentId, commentId) => {
     if (!window.confirm("Are you sure you want to delete this comment?"))
       return;
 
     try {
       const response = await fetch(
-        `${COURSES}/${courseId}/comments/${commentId}`,
+        `${COURSES}/${selectedCourse._id}/content/${contentId}/comments/${commentId}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
           credentials: "include",
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete comment");
+        throw new Error("Failed to delete comment");
       }
 
-      setComments((prevComments) =>
-        prevComments.filter((comment) => comment._id !== commentId)
-      );
-    } catch (err) {
-      console.error("Error deleting comment:", err);
+      // Update comments state by removing the deleted comment
+      setComments((prevComments) => ({
+        ...prevComments,
+        [contentId]: prevComments[contentId].filter(
+          (comment) => comment._id !== commentId
+        ),
+      }));
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      // Optionally show an error message to the user
     }
   };
 
@@ -229,7 +327,8 @@ const CourseList = () => {
               className={`course-card ${expiryStatus.className}`}
             >
               <h3 className="course-name">{course.courseName}</h3>
-              <p className="course-price">${course.price}</p>
+              <p className="course-price">Price: ${course.price}</p>
+              <p className="course-price">Offer Price: ${course.offerPrice}</p>
               <p className="course-status">Status: {course.status}</p>
               <p className={`expiry-status ${expiryStatus.className}`}>
                 {getRemainingDays(course.expiryDate)}
@@ -286,6 +385,9 @@ const CourseList = () => {
         <h2>{selectedCourse.courseName}</h2>
         <div className="course-info">
           <p className="course-price">Price: ${selectedCourse.price}</p>
+          <p className="course-price">
+            Offer Price: ${selectedCourse.offerPrice}
+          </p>
           <p className={`expiry-date ${expiryStatus.className}`}>
             Expiry Date: {formatDate(selectedCourse.expiryDate)}
             <span className="remaining-days">
@@ -294,56 +396,126 @@ const CourseList = () => {
           </p>
         </div>
         <h3>Course Content:</h3>
-        {selectedCourse.content.map((item, index) => (
-          <div key={index} className="content-item">
+        {selectedCourse?.content.map((content) => (
+          <div key={content._id} className="content-item">
             <div className="content-header">
-              <h4>{item.title}</h4>
+              <h4>{content.title}</h4>
               <button
                 onClick={() =>
-                  handleDeleteContent(selectedCourse._id, item._id)
+                  handleDeleteContent(selectedCourse._id, content._id)
                 }
                 className="delete-content-btn"
               >
                 Delete Content
               </button>
             </div>
-            {item.thumbnailUrl && (
+            {content.thumbnailUrl && (
               <img
-                src={item.thumbnailUrl}
-                alt={item.title}
+                src={content.thumbnailUrl}
+                alt={content.title}
                 className="content-thumbnail"
               />
             )}
-            <p className="content-description">{item.description}</p>
-            {item.videoUrl && (
-              <video src={item.videoUrl} controls className="content-video" />
+            <p className="content-description">{content.description}</p>
+            {content.videoUrl && (
+              <video
+                src={content.videoUrl}
+                controls
+                className="content-video"
+              />
             )}
+            <ContentAttachments
+              courseId={selectedCourse._id}
+              contentId={content._id}
+              attachments={content.attachments}
+              onAttachmentsUpdate={(newAttachments) => {
+                const updatedContent = {
+                  ...content,
+                  attachments: newAttachments,
+                };
+                setSelectedCourse((prev) => ({
+                  ...prev,
+                  content: prev.content.map((c) =>
+                    c._id === content._id ? updatedContent : c
+                  ),
+                }));
+              }}
+            />
+            <div className="comments-section">
+              <h5>Comments</h5>
+              {comments[content._id] && comments[content._id].length > 0 ? (
+                comments[content._id].map((comment) => (
+                  <div key={comment._id} className="comment-item">
+                    <div className="comment-header">
+                      <span className="comment-author">
+                        {comment.user?.username || "Unknown User"}
+                      </span>
+                      <span className="comment-date">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="comment-content">{comment.content}</p>
+
+                    {/* Check if admin reply exists */}
+                    {comment.adminReply && (
+                      <div className="admin-reply">
+                        <p className="reply-header">
+                          <strong>Admin Reply:</strong>
+                          {comment.adminReply.repliedBy?.username
+                            ? ` by ${comment.adminReply.repliedBy.username}`
+                            : ""}
+                          <span className="reply-date">
+                            {new Date(
+                              comment.adminReply.repliedAt
+                            ).toLocaleDateString()}
+                          </span>
+                        </p>
+                        <p className="reply-content">
+                          {comment.adminReply.content}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Admin reply form (if admin) */}
+                    {isAdmin && (
+                      <div className="admin-reply-container">
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleAdminReply(
+                              selectedCourse._id,
+                              content._id,
+                              comment._id
+                            );
+                          }}
+                          className="admin-reply-form"
+                        >
+                          <textarea
+                            value={adminReplyText[comment._id] || ""}
+                            onChange={(e) =>
+                              setAdminReplyText((prev) => ({
+                                ...prev,
+                                [comment._id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Reply to this comment..."
+                            required
+                            maxLength={1000}
+                          />
+                          <button type="submit" className="admin-reply-submit">
+                            Send Admin Reply
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p>No comments for this content</p>
+              )}
+            </div>
           </div>
         ))}
-        <h3>Comments:</h3>
-        {comments.length > 0 ? (
-          <ul className="comment-list">
-            {comments.map((comment) => (
-              <li key={comment._id} className="comment-item">
-                <p>
-                  <strong>{comment.user.username}</strong>: {comment.content}
-                </p>
-                <p className="comment-date">
-                  {new Date(comment.createdAt).toLocaleString()}
-                </p>
-                <button
-                  onClick={() => handleDeleteComment(comment._id)}
-                  className="delete-comment-btn"
-                  title="Delete comment"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No comments available for this course.</p>
-        )}
       </div>
     );
   }

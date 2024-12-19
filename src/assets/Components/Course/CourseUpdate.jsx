@@ -7,6 +7,7 @@ const CourseUpdate = ({ course, onBack }) => {
     courseName: course?.courseName || "",
     courseDescription: course?.courseDescription || "",
     price: course?.price || 0,
+    offerPrice: course?.offerPrice || 0,
     expiryDate: course?.expiryDate
       ? new Date(course.expiryDate).toISOString().split("T")[0]
       : "",
@@ -15,6 +16,7 @@ const CourseUpdate = ({ course, onBack }) => {
       unit: course?.validityPeriod?.unit || "days",
     },
     thumbnail: null,
+    video: null,
   });
   const [contentItems, setContentItems] = useState(course?.content || []);
   const [newContent, setNewContent] = useState({
@@ -53,11 +55,17 @@ const CourseUpdate = ({ course, onBack }) => {
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
-      if (field === "courseThumbnail") {
+      if (field === "thumbnail") {
         setCourseData((prev) => ({ ...prev, thumbnail: file }));
         setSelectedFiles((prev) => ({
           ...prev,
-          courseThumbnail: file.name,
+          courseThumbnailUrl: file.name,
+        }));
+      } else if (field === "video") {
+        setCourseData((prev) => ({ ...prev, video: file }));
+        setSelectedFiles((prev) => ({
+          ...prev,
+          courseVideoUrl: file.name,
         }));
       } else {
         setNewContent((prev) => ({ ...prev, [field]: file }));
@@ -79,6 +87,7 @@ const CourseUpdate = ({ course, onBack }) => {
       formData.append("courseName", courseData.courseName);
       formData.append("courseDescription", courseData.courseDescription);
       formData.append("price", courseData.price);
+      formData.append("offerPrice", courseData.offerPrice);
       formData.append("expiryDate", courseData.expiryDate);
       formData.append(
         "validityPeriod[duration]",
@@ -88,7 +97,11 @@ const CourseUpdate = ({ course, onBack }) => {
 
       // Append thumbnail if a new file is selected
       if (courseData.thumbnail) {
-        formData.append("image", courseData.thumbnail);
+        formData.append("thumbnail", courseData.thumbnail);
+      }
+
+      if (courseData.video) {
+        formData.append("video", courseData.video);
       }
 
       const response = await fetch(`${COURSES}/${course._id}`, {
@@ -186,7 +199,7 @@ const CourseUpdate = ({ course, onBack }) => {
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => handleFileChange(e, "courseThumbnail")}
+            onChange={(e) => handleFileChange(e, "thumbnail")}
           />
           {selectedFiles.courseThumbnail && (
             <span className="file-name">{selectedFiles.courseThumbnail}</span>
@@ -207,6 +220,33 @@ const CourseUpdate = ({ course, onBack }) => {
           )}
         </div>
         <div className="form-group">
+          <label>Course video</label>
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) => handleFileChange(e, "video", "course")}
+            className="form-input"
+          />
+          {selectedFiles.coursVideoUrl && (
+            <span className="file-name">{selectedFiles.courseVideoUrl}</span>
+          )}
+          {course.courseVideoUrl && (
+            <div className="current-thumbnail">
+              <p>Current Thumbnail:</p>
+              <img
+                src={course.courseThumbnailUrl}
+                alt="Current Course Thumbnail"
+                style={{
+                  maxWidth: "200px",
+                  maxHeight: "200px",
+                  marginTop: "10px",
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="form-group">
           <label>Course Description</label>
           <input
             type="text"
@@ -226,6 +266,17 @@ const CourseUpdate = ({ course, onBack }) => {
             required
           />
         </div>
+
+        <div className="form-group">
+          <label>Offer Price</label>
+          <input
+            type="number"
+            name="offerPrice"
+            value={courseData.offerPrice}
+            onChange={(e) => handleInputChange(e, "course")}
+          />
+        </div>
+
         <div className="form-group">
           <label>Expiry Date</label>
           <input

@@ -1,37 +1,48 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ADMIN_TESTIMONIALS } from "../../Helper/Api_helpers";
+import { ADMIN_TESTIMONIALS, COURSES } from "../../Helper/Api_helpers";
 import "./Testimonials.css";
 
 const Testimonials = () => {
   const [testimonials, setTestimonials] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [newTestimonial, setNewTestimonial] = useState({
     name: "",
     comment: "",
+    profession: "",
+    courseName: "",
   });
   const [editingTestimonial, setEditingTestimonial] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Fetch courses and testimonials
   useEffect(() => {
-    fetchContent();
-  }, [page]);
+    const fetchData = async () => {
+      try {
+        // Fetch courses
+        const courseResponse = await axios.get(COURSES);
+        setCourses(courseResponse.data.data || []);
 
-  const fetchContent = async () => {
-    try {
-      const response = await axios.get(`${ADMIN_TESTIMONIALS}?page=${page}`);
-      setTestimonials(response.data.data.testimonials || []);
-      setTotalPages(response.data.data.totalPages);
-    } catch (error) {
-      console.error("Error fetching content:", error);
-      setMessage({
-        type: "error",
-        text: "Failed to load current content",
-      });
-    }
-  };
+        // Fetch testimonials
+        const testimonialsResponse = await axios.get(
+          `${ADMIN_TESTIMONIALS}?page=${page}`
+        );
+        setTestimonials(testimonialsResponse.data.data.testimonials || []);
+        setTotalPages(testimonialsResponse.data.data.totalPages);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setMessage({
+          type: "error",
+          text: "Failed to load content",
+        });
+      }
+    };
+
+    fetchData();
+  }, [page]);
 
   const handleTestimonialChange = (e) => {
     const { name, value } = e.target;
@@ -57,6 +68,11 @@ const Testimonials = () => {
       const formData = new FormData();
       formData.append("name", newTestimonial.name);
       formData.append("comment", newTestimonial.comment);
+      formData.append("profession", newTestimonial.profession);
+      const selectedCourse = courses.find(
+        (course) => course._id === newTestimonial.courseName
+      );
+      formData.append("courseName", selectedCourse.courseName);
 
       const response = await axios.post(ADMIN_TESTIMONIALS, formData, {
         headers: {
@@ -69,10 +85,18 @@ const Testimonials = () => {
           type: "success",
           text: "Testimonial added successfully!",
         });
-        fetchContent();
+        // Refresh content
+        const testimonialsResponse = await axios.get(
+          `${ADMIN_TESTIMONIALS}?page=${page}`
+        );
+        setTestimonials(testimonialsResponse.data.data.testimonials || []);
+
+        // Reset form
         setNewTestimonial({
           name: "",
           comment: "",
+          profession: "",
+          courseName: "",
         });
       }
     } catch (error) {
@@ -83,25 +107,6 @@ const Testimonials = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this testimonial?")) {
-      try {
-        await axios.delete(`${ADMIN_TESTIMONIALS}/${id}`);
-        setMessage({
-          type: "success",
-          text: "Testimonial deleted successfully!",
-        });
-        fetchContent();
-      } catch (error) {
-        console.error("Error deleting testimonial:", error);
-        setMessage({
-          type: "error",
-          text: "Failed to delete testimonial",
-        });
-      }
     }
   };
 
@@ -121,7 +126,11 @@ const Testimonials = () => {
           text: "Testimonial updated successfully!",
         });
         setEditingTestimonial(null);
-        fetchContent();
+        // Refresh content
+        const testimonialsResponse = await axios.get(
+          `${ADMIN_TESTIMONIALS}?page=${page}`
+        );
+        setTestimonials(testimonialsResponse.data.data.testimonials || []);
       }
     } catch (error) {
       console.error("Error updating testimonial:", error);
@@ -129,6 +138,29 @@ const Testimonials = () => {
         type: "error",
         text: error.response?.data?.message || "Failed to update testimonial",
       });
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this testimonial?")) {
+      try {
+        await axios.delete(`${ADMIN_TESTIMONIALS}/${id}`);
+        setMessage({
+          type: "success",
+          text: "Testimonial deleted successfully!",
+        });
+        // Refresh content
+        const testimonialsResponse = await axios.get(
+          `${ADMIN_TESTIMONIALS}?page=${page}`
+        );
+        setTestimonials(testimonialsResponse.data.data.testimonials || []);
+      } catch (error) {
+        console.error("Error deleting testimonial:", error);
+        setMessage({
+          type: "error",
+          text: "Failed to delete testimonial",
+        });
+      }
     }
   };
 
@@ -159,6 +191,42 @@ const Testimonials = () => {
             onChange={handleTestimonialChange}
             required
           />
+        </div>
+
+        <div className="form-group">
+          <label>Profession</label>
+          <input
+            type="text"
+            name="profession"
+            value={
+              editingTestimonial
+                ? editingTestimonial.profession
+                : newTestimonial.profession
+            }
+            onChange={handleTestimonialChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Course</label>
+          <select
+            name="courseName"
+            value={
+              editingTestimonial
+                ? editingTestimonial.courseName
+                : newTestimonial.courseName
+            }
+            onChange={handleTestimonialChange}
+            required
+          >
+            <option value="">Select a Course</option>
+            {courses.map((course) => (
+              <option key={course._id} value={course._id}>
+                {course.courseName}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
@@ -198,6 +266,7 @@ const Testimonials = () => {
           <div key={testimonial._id} className="testimonial-item">
             <div className="testimonial-header">
               <h4 className="testimonial-name">{testimonial.name}</h4>
+              <p className="testimonial-profession">{testimonial.profession}</p>
               <div className="testimonial-actions">
                 <button
                   onClick={() => setEditingTestimonial(testimonial)}
@@ -213,6 +282,9 @@ const Testimonials = () => {
                 </button>
               </div>
             </div>
+            <p className="testimonial-course">
+              Course: {testimonial.courseName || "N/A"}
+            </p>
             <p className="testimonial-comment">{testimonial.comment}</p>
           </div>
         ))}

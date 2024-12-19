@@ -26,6 +26,9 @@ import About from "./assets/Pages/About/About.jsx";
 import Testimonials from "./assets/Pages/Testimonials/Testimonials.jsx";
 import ShortsVideo from "./assets/Pages/Shorts-Video/ShortsVideo.jsx";
 import BannerUpload from "./assets/Pages/Banner/BannerUpload.jsx";
+import CouponCode from "./assets/Components/Course/CouponCode.jsx";
+import ContactUs from "./assets/Pages/ContactUs/ContactUs.jsx";
+import HomePage2 from "./assets/Pages/HomePage/HomePage2.jsx";
 
 function App() {
   return (
@@ -163,6 +166,30 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <BannerUpload />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/coupon-code"
+                  element={
+                    <ProtectedRoute>
+                      <CouponCode />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/contact-us"
+                  element={
+                    <ProtectedRoute>
+                      <ContactUs />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/home-page2"
+                  element={
+                    <ProtectedRoute>
+                      <HomePage2 />
                     </ProtectedRoute>
                   }
                 />
