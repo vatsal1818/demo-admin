@@ -1,66 +1,112 @@
 .admin-container {
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 20px;
 }
 
 .admin-title {
     text-align: center;
-    margin-bottom: 20px;
+    color: #333;
+    margin-bottom: 30px;
 }
 
 .admin-form {
-    background-color: #f4f4f4;
-    padding: 20px;
+    background: #fff;
+    padding: 25px;
     border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 25px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #f8f9fa;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 500;
 }
 
 .form-group input {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
-.submit-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
+.input-with-button {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.input-with-button input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.fetch-button {
+    padding: 8px 15px;
+    background: #4CAF50;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    white-space: nowrap;
+}
+
+.fetch-button:hover {
+    background: #45a049;
+}
+
+.fetch-button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+.submit-button {
+    width: 100%;
+    padding: 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    margin-top: 20px;
+}
+
+.submit-button:hover {
+    background: #0056b3;
 }
 
 .submit-button:disabled {
-    background-color: #cccccc;
+    background: #cccccc;
     cursor: not-allowed;
 }
 
 .message {
-    margin-top: 15px;
-    padding: 10px;
+    margin-top: 20px;
+    padding: 12px;
     border-radius: 4px;
     text-align: center;
 }
 
 .message.success {
-    background-color: #dff0d8;
-    color: #3c763d;
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 .message.error {
-    background-color: #f2dede;
-    color: #a94442;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }

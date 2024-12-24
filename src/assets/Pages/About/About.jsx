@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ADMIN_ABOUT_US } from "../../Helper/Api_helpers";
 import About2 from "./About2";
+import SocialStats from "../SocialStats/SocialStats";
+import PodcastUpload from "../PodcastVideo/PodcastUpload";
 
 const About = () => {
   const [title, setTitle] = useState("");
@@ -81,7 +83,8 @@ const About = () => {
   return (
     <div className="admin-container">
       <h1 className="admin-title">Admin Dashboard</h1>
-
+      {/* first section  */}
+      <h1>Full name section</h1>
       <div className="section-container">
         <h2 className="section-title">About Us Content</h2>
         <form onSubmit={handleAboutSubmit} className="admin-form">
@@ -164,7 +167,17 @@ const About = () => {
           </button>
         </form>
       </div>
+      {/* second section  */}
+      <h1>Social stats</h1>
+      <SocialStats />
+
+      {/* third section */}
+      <h1>i am an option scalper</h1>
       <About2 />
+
+      {/* fourth section */}
+      <h1>Podcast section</h1>
+      <PodcastUpload />
     </div>
   );
 };

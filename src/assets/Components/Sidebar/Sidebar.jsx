@@ -50,34 +50,14 @@ const Sidebar = () => {
           <p>About Page </p>
         </div>
       </Link>
-      <Link to="shorts-video" style={{ textDecoration: "none" }}>
-        <div className="sidebar-item">
-          <p>Shorts Video Page </p>
-        </div>
-      </Link>
-      <Link to="testimonials" style={{ textDecoration: "none" }}>
-        <div className="sidebar-item">
-          <p>Testimonials Page </p>
-        </div>
-      </Link>
-      <Link to="banner-upload" style={{ textDecoration: "none" }}>
-        <div className="sidebar-item">
-          <p>Banner Upload Page </p>
-        </div>
-      </Link>
-      <Link to="coupon-code" style={{ textDecoration: "none" }}>
-        <div className="sidebar-item">
-          <p>Coupon Code </p>
-        </div>
-      </Link>
       <Link to="contact-us" style={{ textDecoration: "none" }}>
         <div className="sidebar-item">
           <p>Contact Us </p>
         </div>
       </Link>
-      <Link to="home-page2" style={{ textDecoration: "none" }}>
+      <Link to="coupon-code" style={{ textDecoration: "none" }}>
         <div className="sidebar-item">
-          <p>HomePage Why choose us </p>
+          <p>Coupon Code </p>
         </div>
       </Link>
     </div>

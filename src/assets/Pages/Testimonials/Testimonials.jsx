@@ -5,6 +5,10 @@ import "./Testimonials.css";
 
 const Testimonials = () => {
   const [testimonials, setTestimonials] = useState([]);
+  const [sectionTitle, setSectionTitle] = useState({
+    title: "",
+    titleSpan: "",
+  });
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -18,20 +22,37 @@ const Testimonials = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const coursesResponse = await axios.get(COURSES);
+        setCourses(coursesResponse.data.data || []);
+        console.log(coursesResponse.data.data);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        setMessage({
+          type: "error",
+          text: "Failed to load courses",
+        });
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
   // Fetch courses and testimonials
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch courses
-        const courseResponse = await axios.get(COURSES);
-        setCourses(courseResponse.data.data || []);
-
-        // Fetch testimonials
         const testimonialsResponse = await axios.get(
           `${ADMIN_TESTIMONIALS}?page=${page}`
         );
         setTestimonials(testimonialsResponse.data.data.testimonials || []);
         setTotalPages(testimonialsResponse.data.data.totalPages);
+        setSectionTitle({
+          title: testimonialsResponse.data.data.title,
+          titleSpan: testimonialsResponse.data.data.titleSpan,
+        });
       } catch (error) {
         console.error("Error fetching data:", error);
         setMessage({
@@ -43,6 +64,28 @@ const Testimonials = () => {
 
     fetchData();
   }, [page]);
+
+  const handleTitleUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put(
+        `${ADMIN_TESTIMONIALS}/title`,
+        sectionTitle
+      );
+      if (response.data.status === "success") {
+        setMessage({
+          type: "success",
+          text: "Section title updated successfully!",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating section title:", error);
+      setMessage({
+        type: "error",
+        text: error.response?.data?.message || "Failed to update section title",
+      });
+    }
+  };
 
   const handleTestimonialChange = (e) => {
     const { name, value } = e.target;
@@ -73,6 +116,12 @@ const Testimonials = () => {
         (course) => course._id === newTestimonial.courseName
       );
       formData.append("courseName", selectedCourse.courseName);
+
+      if (!selectedCourse) {
+        setMessage({ type: "error", text: "Invalid course selected" });
+        setLoading(false);
+        return;
+      }
 
       const response = await axios.post(ADMIN_TESTIMONIALS, formData, {
         headers: {
@@ -171,6 +220,41 @@ const Testimonials = () => {
       {message.text && (
         <div className={`message ${message.type}`}>{message.text}</div>
       )}
+
+      <form className="section-title-form" onSubmit={handleTitleUpdate}>
+        <h3>Update Section Title</h3>
+        <div className="form-group">
+          <label>Title</label>
+          <input
+            type="text"
+            value={sectionTitle.title}
+            onChange={(e) =>
+              setSectionTitle((prev) => ({
+                ...prev,
+                title: e.target.value,
+              }))
+            }
+            placeholder="Enter main title"
+          />
+        </div>
+        <div className="form-group">
+          <label>Title Span</label>
+          <input
+            type="text"
+            value={sectionTitle.titleSpan}
+            onChange={(e) =>
+              setSectionTitle((prev) => ({
+                ...prev,
+                titleSpan: e.target.value,
+              }))
+            }
+            placeholder="Enter highlighted title"
+          />
+        </div>
+        <button type="submit" className="btn btn-primary">
+          Update Section Title
+        </button>
+      </form>
 
       <form
         className="testimonial-form"

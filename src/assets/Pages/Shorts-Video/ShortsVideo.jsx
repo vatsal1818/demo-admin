@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from "react";
 import "./ShortsVideo.css";
-import { ADMIN_SHORTS_VIDEO } from "../../Helper/Api_helpers";
+import axios from "axios";
+import {
+  ADMIN_SHORTS_TITLE,
+  ADMIN_SHORTS_VIDEO,
+} from "../../Helper/Api_helpers";
 
 const AdminShorts = () => {
   const [shortsUrl, setShortsUrl] = useState("");
-  const [videos, setVideos] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [shortsData, setShortsData] = useState({
+    title: "Our",
+    titleSpan: "Shorts Video",
+    shortsVideo: [], // Match backend structure
+  });
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState({ title: "", titleSpan: "" });
 
   useEffect(() => {
     fetchVideos();
@@ -15,13 +25,11 @@ const AdminShorts = () => {
 
   const fetchVideos = async () => {
     try {
-      const response = await fetch(ADMIN_SHORTS_VIDEO);
-      if (!response.ok) throw new Error("Failed to fetch videos");
-      const data = await response.json();
-      setVideos(data);
+      const response = await axios.get(ADMIN_SHORTS_VIDEO);
+      setShortsData(response.data.data);
     } catch (error) {
-      console.error("Error fetching videos:", error);
-      setError("Failed to fetch videos");
+      console.error("Error fetching shorts videos:", error);
+      setError("Failed to load shorts videos");
     }
   };
 
@@ -34,6 +42,24 @@ const AdminShorts = () => {
       );
     } catch {
       return false;
+    }
+  };
+
+  const handleUpdateTitle = async () => {
+    try {
+      const response = await axios.put(ADMIN_SHORTS_TITLE, {
+        title: tempTitle.title,
+        titleSpan: tempTitle.titleSpan,
+      });
+
+      if (response.data.status === "success") {
+        setShortsData(response.data.data);
+        setEditingTitle(false);
+        setSuccessMessage("Title updated successfully!");
+      }
+    } catch (error) {
+      console.error("Error updating title:", error);
+      setError("Failed to update title");
     }
   };
 
@@ -50,55 +76,81 @@ const AdminShorts = () => {
     }
 
     try {
-      const response = await fetch(ADMIN_SHORTS_VIDEO, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url: shortsUrl }),
+      const response = await axios.post(ADMIN_SHORTS_VIDEO, {
+        url: shortsUrl,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add video");
+      if (response.data.status === "success") {
+        setShortsUrl("");
+        setSuccessMessage("Video added successfully!");
+        setShortsData(response.data.data);
       }
-
-      setShortsUrl("");
-      setSuccessMessage("Video added successfully!");
-      fetchVideos();
     } catch (error) {
       console.error("Error adding video:", error);
-      setError(error.message || "Failed to add video");
+      setError(error.response?.data?.error || "Failed to add video");
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteVideo = async (videoId) => {
-    if (!window.confirm("Are you sure you want to delete this video?")) {
-      return;
-    }
-
-    setError("");
+  const handleDeleteShorts = async (index) => {
     try {
-      const response = await fetch(`${ADMIN_SHORTS_VIDEO}/${videoId}`, {
-        method: "DELETE",
-      });
+      const response = await axios.delete(`${ADMIN_SHORTS_VIDEO}/${index}`);
 
-      if (!response.ok) throw new Error("Failed to delete video");
-
-      setSuccessMessage("Video deleted successfully");
-      fetchVideos();
+      if (response.data.status === "success") {
+        setSuccessMessage("shorts deleted successfully!");
+        fetchVideos();
+      }
     } catch (error) {
-      console.error("Error deleting video:", error);
-      setError("Failed to delete video");
+      console.error("Error deleting shorts:", error);
+      setError("Failed to delete shorts");
     }
   };
 
   return (
     <div className="admin-form">
       <h2>Add YouTube Shorts</h2>
+
+      <div className="shorts-title-section">
+        {!editingTitle ? (
+          <div
+            className="shorts-title"
+            onClick={() => {
+              setTempTitle({
+                title: shortsData.title,
+                titleSpan: shortsData.titleSpan,
+              });
+              setEditingTitle(true);
+            }}
+          >
+            <h3>
+              {shortsData.title} <span>{shortsData.titleSpan}</span>
+            </h3>
+            <button className="edit-title-button">Edit Title</button>
+          </div>
+        ) : (
+          <div className="shorts-title-edit">
+            <input
+              value={tempTitle.title}
+              onChange={(e) =>
+                setTempTitle({ ...tempTitle, title: e.target.value })
+              }
+              placeholder="Main Title"
+            />
+            <input
+              value={tempTitle.titleSpan}
+              onChange={(e) =>
+                setTempTitle({ ...tempTitle, titleSpan: e.target.value })
+              }
+              placeholder="Span Title"
+            />
+            <div className="title-edit-actions">
+              <button onClick={handleUpdateTitle}>Save</button>
+              <button onClick={() => setEditingTitle(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="shorts-form">
         <div className="input-group">
@@ -122,20 +174,20 @@ const AdminShorts = () => {
       </form>
 
       <div className="video-list">
-        <h3>Existing Shorts ({videos.length})</h3>
-        {videos.length === 0 ? (
+        <h3>Existing Shorts ({shortsData.shortsVideo.length})</h3>
+        {shortsData.shortsVideo.length === 0 ? (
           <div className="no-videos">No videos added yet</div>
         ) : (
           <div className="videos-grid">
-            {videos.map((video) => (
-              <div key={video._id} className="video-item">
+            {shortsData.shortsVideo.map((video, index) => (
+              <div key={index} className="video-item">
                 <div className="video-container">
                   <div dangerouslySetInnerHTML={{ __html: video.embedCode }} />
                 </div>
                 <div className="video-actions">
                   <button
                     className="delete-button"
-                    onClick={() => deleteVideo(video._id)}
+                    onClick={() => handleDeleteShorts(index)}
                   >
                     Delete
                   </button>

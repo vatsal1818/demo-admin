@@ -3,6 +3,11 @@ import axios from "axios";
 import "./YoutubeCourse.css";
 import { ADMIN_UPLOADS } from "../../Helper/Api_helpers";
 import SocialStats from "../../Pages/SocialStats/SocialStats";
+import FeaturedCoursesAdmin from "../../Pages/FeaturedCourse/FeaturedCourses";
+import HomePage2 from "../../Pages/HomePage/HomePage2";
+import Testimonials from "../../Pages/Testimonials/Testimonials";
+import AdminShorts from "../../Pages/Shorts-Video/ShortsVideo";
+import BannerUpload from "../../Pages/Banner/BannerUpload";
 
 const YoutubeCourse = () => {
   const [title, setTitle] = useState("");
@@ -77,6 +82,8 @@ const YoutubeCourse = () => {
     <div className="admin-container">
       <h1 className="admin-title">Admin Dashboard</h1>
 
+      {/* first  */}
+      <h1>First Main Page</h1>
       <form onSubmit={handleSubmit} className="admin-form">
         <div className="form-group">
           <label>Website Upper Title</label>
@@ -147,7 +154,29 @@ const YoutubeCourse = () => {
           {message}
         </div>
       )}
+      {/* Social Stats */}
+      <h1>Social Stats</h1>
       <SocialStats />
+
+      {/* featured Courses */}
+      <h1>Featured Courses</h1>
+      <FeaturedCoursesAdmin />
+
+      {/* Why choose Us */}
+      <h1>Why Choose US</h1>
+      <HomePage2 />
+
+      {/* Testimonials */}
+      <h1>Testimonials</h1>
+      <Testimonials />
+
+      {/* Shorts */}
+      <h1>Shorts</h1>
+      <AdminShorts />
+
+      {/* Banner Upload */}
+      <h1>Banner</h1>
+      <BannerUpload />
     </div>
   );
 };

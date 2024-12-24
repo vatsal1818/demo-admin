@@ -1,0 +1,22 @@
+.podcast-upload-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.podcast-embed {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.podcast-embed iframe {
+    max-width: 100%;
+}
+
+.podcast-actions {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}

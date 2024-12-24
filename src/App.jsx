@@ -29,6 +29,7 @@ import BannerUpload from "./assets/Pages/Banner/BannerUpload.jsx";
 import CouponCode from "./assets/Components/Course/CouponCode.jsx";
 import ContactUs from "./assets/Pages/ContactUs/ContactUs.jsx";
 import HomePage2 from "./assets/Pages/HomePage/HomePage2.jsx";
+import PodcastUpload from "./assets/Pages/PodcastVideo/PodcastUpload.jsx";
 
 function App() {
   return (
@@ -190,6 +191,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <HomePage2 />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/podcast-upload"
+                  element={
+                    <ProtectedRoute>
+                      <PodcastUpload />
                     </ProtectedRoute>
                   }
                 />

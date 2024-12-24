@@ -24,6 +24,8 @@ export const ADMIN_WHY_CHOOSE_US = `${process.env.REACT_APP_API_URL}/api/why-cho
 
 export const ADMIN_SHORTS_VIDEO = `${process.env.REACT_APP_API_URL}/api/admin/video`;
 
+export const ADMIN_SHORTS_TITLE = `${process.env.REACT_APP_API_URL}/api/admin/title`;
+
 export const ADMIN_BANNER_UPLOADS = `${process.env.REACT_APP_API_URL}/api/banners`;
 
 export const ADMIN_CHECK = `${process.env.REACT_APP_API_URL}/api/user/check-admin`;
@@ -39,3 +41,13 @@ export const ADMIN_SOCIAL_STATS = `${process.env.REACT_APP_API_URL}/api/social-s
 export const HOME_PAGE_2 = `${process.env.REACT_APP_API_URL}/api/admin-page-2`;
 
 export const ADMIN_ABOUT_US_2 = `${process.env.REACT_APP_API_URL}/api/about-us2-content`;
+
+export const ADMIN_PODCASTS = `${process.env.REACT_APP_API_URL}/api/podcasts`;
+
+export const FEATURED_COURSES = `${process.env.REACT_APP_API_URL}/api/featured-courses`;
+
+export const YOUTUBE_COUNT = `${process.env.REACT_APP_API_URL}/api/youtube`;
+
+export const INSTA_COUNT = `${process.env.REACT_APP_API_URL}/api/instagram`;
+
+export const TELEGRAM_COUNT = `${process.env.REACT_APP_API_URL}/api/telegram`;
