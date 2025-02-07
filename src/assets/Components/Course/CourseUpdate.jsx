@@ -135,12 +135,18 @@ const CourseUpdate = ({ course, onBack }) => {
     setIsLoading(true);
     setError(null);
 
+    // Validate required files
+    if (!newContent.thumbnail || !newContent.video) {
+      setError("Both thumbnail and video files are required");
+      setIsLoading(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("title", newContent.title);
     formData.append("description", newContent.description);
-    if (newContent.thumbnail)
-      formData.append("thumbnail", newContent.thumbnail);
-    if (newContent.video) formData.append("video", newContent.video);
+    formData.append("thumbnail", newContent.thumbnail);
+    formData.append("video", newContent.video);
 
     try {
       const response = await fetch(`${COURSES}/${course._id}/content`, {
@@ -149,7 +155,10 @@ const CourseUpdate = ({ course, onBack }) => {
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Failed to add content");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to add content");
+      }
 
       const data = await response.json();
       setContentItems((prev) => [...prev, data.data]);
@@ -325,7 +334,7 @@ const CourseUpdate = ({ course, onBack }) => {
           <h3>Add New Content</h3>
           <form onSubmit={handleAddContent} className="add-content-form">
             <div className="form-group">
-              <label>Title</label>
+              <label>Title *</label>
               <input
                 type="text"
                 name="title"
@@ -335,7 +344,7 @@ const CourseUpdate = ({ course, onBack }) => {
               />
             </div>
             <div className="form-group">
-              <label>Description</label>
+              <label>Description *</label>
               <textarea
                 name="description"
                 value={newContent.description}
@@ -344,31 +353,44 @@ const CourseUpdate = ({ course, onBack }) => {
               />
             </div>
             <div className="form-group">
-              <label>Thumbnail</label>
+              <label>
+                Thumbnail *{" "}
+                {!newContent.thumbnail && (
+                  <span className="required-field">Required</span>
+                )}
+              </label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => handleFileChange(e, "thumbnail")}
+                required
               />
               {selectedFiles.thumbnail && (
                 <span className="file-name">{selectedFiles.thumbnail}</span>
               )}
             </div>
             <div className="form-group">
-              <label>Video</label>
+              <label>
+                Video *{" "}
+                {!newContent.video && (
+                  <span className="required-field">Required</span>
+                )}
+              </label>
               <input
                 type="file"
                 accept="video/*"
                 onChange={(e) => handleFileChange(e, "video")}
+                required
               />
               {selectedFiles.video && (
                 <span className="file-name">{selectedFiles.video}</span>
               )}
             </div>
+            {error && <div className="error-message">{error}</div>}
             <button
               type="submit"
               className={isLoading ? "loading" : ""}
-              disabled={isLoading}
+              disabled={isLoading || !newContent.thumbnail || !newContent.video}
             >
               {isLoading ? "Adding..." : "Add Content"}
             </button>

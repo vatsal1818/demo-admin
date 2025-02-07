@@ -5,7 +5,7 @@ import "./CourseList.css";
 import CourseUpdate from "./CourseUpdate";
 import ContentAttachments from "./ContentAttachment";
 
-const CourseList = () => {
+const CourseListExample = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [comments, setComments] = useState([]);
@@ -537,4 +537,4 @@ const CourseList = () => {
   );
 };
 
-export default CourseList;
+export default CourseListExample;
