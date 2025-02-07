@@ -27,7 +27,6 @@ const SocialStats = () => {
       count: 0,
     },
   });
-
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -44,8 +43,12 @@ const SocialStats = () => {
     }
   };
 
-  // This function now only tests if the ID/username is valid
   const testPlatformCredentials = async (platform, identifier) => {
+    if (!identifier) {
+      setMessage(`Please enter a ${platform} identifier first`);
+      return;
+    }
+
     try {
       let response;
       switch (platform) {
@@ -108,7 +111,7 @@ const SocialStats = () => {
                 youtube: { ...prev.youtube, title: e.target.value },
               }))
             }
-            required
+            placeholder="Enter YouTube stat title"
           />
           <label>YouTube Channel ID</label>
           <div className="input-with-button">
@@ -121,15 +124,15 @@ const SocialStats = () => {
                   youtube: { ...prev.youtube, channelId: e.target.value },
                 }))
               }
-              placeholder="Enter YouTube Channel ID"
+              placeholder="Enter YouTube Channel ID (optional)"
             />
             <button
               type="button"
               onClick={() =>
-                platforms.youtube.channelId &&
                 testPlatformCredentials("youtube", platforms.youtube.channelId)
               }
               className="fetch-button"
+              disabled={!platforms.youtube.channelId}
             >
               Test ID
             </button>
@@ -148,7 +151,7 @@ const SocialStats = () => {
                 instagram: { ...prev.instagram, title: e.target.value },
               }))
             }
-            required
+            placeholder="Enter Instagram stat title"
           />
           <label>Instagram Username</label>
           <div className="input-with-button">
@@ -161,18 +164,18 @@ const SocialStats = () => {
                   instagram: { ...prev.instagram, username: e.target.value },
                 }))
               }
-              placeholder="Enter Instagram Username"
+              placeholder="Enter Instagram Username (optional)"
             />
             <button
               type="button"
               onClick={() =>
-                platforms.instagram.username &&
                 testPlatformCredentials(
                   "instagram",
                   platforms.instagram.username
                 )
               }
               className="fetch-button"
+              disabled={!platforms.instagram.username}
             >
               Test Username
             </button>
@@ -191,7 +194,7 @@ const SocialStats = () => {
                 telegram: { ...prev.telegram, title: e.target.value },
               }))
             }
-            required
+            placeholder="Enter Telegram stat title"
           />
           <label>Telegram Channel ID</label>
           <div className="input-with-button">
@@ -204,25 +207,25 @@ const SocialStats = () => {
                   telegram: { ...prev.telegram, channelId: e.target.value },
                 }))
               }
-              placeholder="Enter Telegram Channel ID"
+              placeholder="Enter Telegram Channel ID (optional)"
             />
             <button
               type="button"
               onClick={() =>
-                platforms.telegram.channelId &&
                 testPlatformCredentials(
                   "telegram",
                   platforms.telegram.channelId
                 )
               }
               className="fetch-button"
+              disabled={!platforms.telegram.channelId}
             >
               Test ID
             </button>
           </div>
         </div>
 
-        {/* Play Store Section (Manual Entry) */}
+        {/* Play Store Section */}
         <div className="form-group">
           <label>Play Store Title</label>
           <input
@@ -234,7 +237,7 @@ const SocialStats = () => {
                 playstore: { ...prev.playstore, title: e.target.value },
               }))
             }
-            required
+            placeholder="Enter Play Store stat title"
           />
           <label>Play Store Downloads</label>
           <input
@@ -249,7 +252,7 @@ const SocialStats = () => {
                 },
               }))
             }
-            required
+            placeholder="Enter download count (optional)"
           />
         </div>
 

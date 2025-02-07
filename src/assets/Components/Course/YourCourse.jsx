@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./Yourcourse.css";
 import { COURSES } from "../../Helper/Api_helpers";
+import DefaultThumbnailSection from "./DefaultThumbnail";
 
 const AdminCourseCreation = () => {
   const [step, setStep] = useState(1);
@@ -110,33 +111,46 @@ const AdminCourseCreation = () => {
     const formData = new FormData();
     formData.append("title", currentContent.title);
     formData.append("description", currentContent.description);
-    if (currentContent.thumbnail)
+    if (currentContent.thumbnail) {
       formData.append("thumbnail", currentContent.thumbnail);
-    if (currentContent.video) formData.append("video", currentContent.video);
+    }
+    if (currentContent.video) {
+      formData.append("video", currentContent.video);
+    }
 
     try {
-      const response = await fetch(`${COURSES}/${courseId}/content`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
+      await axios.post(`${COURSES}/${courseId}/content`, formData, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to add course content");
-      }
 
       const newContentItem = { ...currentContent, id: Date.now() };
       setContentItems([...contentItems, newContentItem]);
+
+      // Reset content form and file names
       setCurrentContent({
         title: "",
         description: "",
         thumbnail: null,
         video: null,
       });
+      setFileNames((prev) => ({
+        ...prev,
+        contentThumbnail: "",
+        contentVideo: "",
+      }));
+
+      // Reset file inputs
+      const fileInputs = document.querySelectorAll('input[type="file"]');
+      fileInputs.forEach((input) => {
+        input.value = "";
+      });
+
       alert("Content item added successfully!");
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.message || "Failed to add course content");
       console.error("Error adding course content:", error);
     } finally {
       setIsLoading(false);
@@ -147,14 +161,20 @@ const AdminCourseCreation = () => {
     const file = e.target.files[0];
     if (file) {
       if (type === "course") {
-        // Check the field and set either thumbnail or video
         if (field === "thumbnail") {
           setCourseData((prev) => ({ ...prev, thumbnail: file }));
+          setFileNames((prev) => ({ ...prev, courseThumbnail: file.name }));
         } else if (field === "video") {
           setCourseData((prev) => ({ ...prev, video: file }));
+          setFileNames((prev) => ({ ...prev, courseVideo: file.name }));
         }
       } else {
         setCurrentContent((prev) => ({ ...prev, [field]: file }));
+        if (field === "thumbnail") {
+          setFileNames((prev) => ({ ...prev, contentThumbnail: file.name }));
+        } else if (field === "video") {
+          setFileNames((prev) => ({ ...prev, contentVideo: file.name }));
+        }
       }
     }
   };
@@ -191,6 +211,7 @@ const AdminCourseCreation = () => {
   return (
     <div className="course-container">
       <div className="course-card">
+        <DefaultThumbnailSection />
         <h2 className="course-title">
           {step === 1 ? "Create New Course" : "Add Course Content"}
         </h2>
@@ -226,14 +247,16 @@ const AdminCourseCreation = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Course Thumbnail</label>
+              <label className="form-label">Course Thumbnail (Optional)</label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => handleFileChange(e, "thumbnail", "course")}
-                required
                 className="form-input"
               />
+              <small className="helper-text">
+                Leave empty to use default thumbnail
+              </small>
             </div>
 
             <div className="form-group">
@@ -242,7 +265,6 @@ const AdminCourseCreation = () => {
                 type="file"
                 accept="video/*"
                 onChange={(e) => handleFileChange(e, "video", "course")}
-                required
                 className="form-input"
               />
             </div>

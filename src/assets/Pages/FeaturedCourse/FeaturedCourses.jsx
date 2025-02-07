@@ -39,19 +39,30 @@ const FeaturedCoursesAdmin = () => {
       const coursesData = coursesResponse.data.data || [];
       const featuredCoursesData = featuredResponse.data.data || {};
 
-      // Get IDs of featured courses
-      const featuredIds =
-        featuredCoursesData.FeaturedCourses?.map((fc) => fc.courseId._id) || [];
+      console.log(coursesData);
+      console.log(featuredCoursesData);
 
-      // Filter available courses
+      // Add null checks and ensure courseId exists before accessing _id
+      const featuredIds =
+        featuredCoursesData.FeaturedCourses?.reduce((ids, fc) => {
+          if (fc && fc.courseId && fc.courseId._id) {
+            ids.push(fc.courseId._id);
+          }
+          return ids;
+        }, []) || [];
+
+      // Filter available courses, ensuring course._id exists
       const availableCourses = coursesData.filter(
-        (course) => !featuredIds.includes(course._id)
+        (course) => course && course._id && !featuredIds.includes(course._id)
       );
 
       setState((prev) => ({
         ...prev,
         courses: availableCourses,
-        featuredCourses: featuredCoursesData.FeaturedCourses || [],
+        featuredCourses:
+          featuredCoursesData.FeaturedCourses?.filter(
+            (fc) => fc && fc.courseId
+          ) || [],
         title: featuredCoursesData.title || "",
         titleSpan: featuredCoursesData.titleSpan || "",
         loading: { ...prev.loading, initial: false },

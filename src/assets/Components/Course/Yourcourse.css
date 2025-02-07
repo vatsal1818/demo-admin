@@ -156,3 +156,59 @@
         transform: rotate(360deg);
     }
 }
+
+
+.default-thumbnail-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #343a40;
+}
+
+.current-default-thumbnail {
+    margin-bottom: 1.5rem;
+}
+
+.thumbnail-preview {
+    max-width: 200px;
+    margin-top: 0.5rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.helper-text {
+    display: block;
+    margin-top: 0.5rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.default-thumbnail-form {
+    margin-top: 1rem;
+}
+
+.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.status-message {
+    color: #2196f3;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #e3f2fd;
+    border-radius: 4px;
+}
+
+.thumbnail-preview {
+    max-width: 200px;
+    margin: 10px 0;
+    border-radius: 4px;
+}

@@ -10,6 +10,8 @@ export const BROADCAST_CHAT_HISTORY = `${process.env.REACT_APP_API_URL}/api/chat
 
 export const COURSES = `${process.env.REACT_APP_API_URL}/api/courses`;
 
+export const DEFAULT_THUMBNAIL = `${process.env.REACT_APP_API_URL}/api/default-thumbnail`;
+
 export const COURSE_DETAILS = `${process.env.REACT_APP_API_URL}/api/courses/details`;
 
 export const PURCHASED_COURSE = `${process.env.REACT_APP_API_URL}/api/admin/purchases`;
